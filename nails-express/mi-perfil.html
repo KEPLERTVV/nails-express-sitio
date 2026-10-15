@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi perfil — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+  <!-- Barra superior ---------------------------------------- -->
+  <header class="barra">
+    <div class="contenedor barra__fila">
+      <a class="barra__logo" href="index.html"><img src="img/logo sin fondo.svg" alt="Nails Express"></a>
+      <ul class="barra__menu">
+        <li><a href="index.html#catalogo">Catálogo</a></li>
+        <li><a href="index.html#cotizar">Cotizar</a></li>
+        <li><a href="index.html#sucursales">Sucursales</a></li>
+      </ul>
+      <div class="barra__acciones">
+        <a class="barra__sesion" href="#">Iniciar sesión</a>
+        <a class="boton boton--principal" href="agendar.html">Agendar</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="cuenta">
+    <div class="contenedor">
+
+      <!-- Panel de la clienta (solo con sesión) -------------- -->
+      <div class="cuenta__rejilla" id="cuenta-panel">
+
+        <aside class="cuenta__lateral">
+          <div class="cuenta__tarjeta">
+            <span class="cuenta__inicial" id="cuenta-inicial" aria-hidden="true"></span>
+            <div class="cuenta__quien">
+              <p class="cuenta__nombre" id="cuenta-nombre"></p>
+              <p class="cuenta__correo" id="cuenta-correo"></p>
+            </div>
+          </div>
+          <nav class="cuenta__nav" aria-label="Mi cuenta">
+            <a href="mis-citas.html">Mis citas</a>
+            <a href="mi-perfil.html" aria-current="page">Mi perfil</a>
+          </nav>
+          <a class="boton boton--principal cuenta__agendar" href="agendar.html">Agendar nueva cita</a>
+        </aside>
+
+        <div class="cuenta__contenido">
+          <h1>Mi perfil</h1>
+          <p class="cuenta__intro">Mantén tus datos al día: los usamos para confirmarte las citas por WhatsApp.</p>
+
+          <!-- Datos personales -->
+          <section class="cuenta__bloque cuenta__tarjeta-blanca" aria-labelledby="titulo-datos">
+            <h2 id="titulo-datos">Datos personales</h2>
+            <form class="formulario" id="form-datos" novalidate>
+              <div class="campo">
+                <label for="perfil-nombre">Nombre completo</label>
+                <input type="text" id="perfil-nombre" name="nombre" autocomplete="name"
+                       data-regla="nombre" aria-describedby="perfil-nombre-error">
+                <div class="campo__error" id="perfil-nombre-error"></div>
+              </div>
+              <div class="formulario__par">
+                <div class="campo">
+                  <label for="perfil-telefono">Teléfono</label>
+                  <input type="tel" id="perfil-telefono" name="telefono" autocomplete="tel-national"
+                         inputmode="tel" data-regla="telefono" aria-describedby="perfil-telefono-error">
+                  <div class="campo__error" id="perfil-telefono-error"></div>
+                </div>
+                <div class="campo">
+                  <label for="perfil-correo">Correo</label>
+                  <input type="email" id="perfil-correo" name="correo" autocomplete="email"
+                         autocapitalize="none" spellcheck="false"
+                         data-regla="correo" aria-describedby="perfil-correo-error">
+                  <div class="campo__error" id="perfil-correo-error"></div>
+                </div>
+              </div>
+              <div class="aviso" role="status"></div>
+              <button class="boton boton--principal" type="submit">Guardar cambios</button>
+            </form>
+          </section>
+
+          <!-- Contraseña -->
+          <section class="cuenta__bloque cuenta__tarjeta-blanca" aria-labelledby="titulo-clave">
+            <h2 id="titulo-clave">Cambiar contraseña</h2>
+            <form class="formulario" id="form-clave" novalidate>
+              <!-- Ayuda a los gestores de contraseñas a saber de qué cuenta es -->
+              <input class="oculto" type="email" id="clave-usuario" autocomplete="username"
+                     tabindex="-1" aria-hidden="true" readonly>
+
+              <div class="campo">
+                <label for="clave-actual">Contraseña actual</label>
+                <div class="acceso__clave">
+                  <input type="password" id="clave-actual" name="actual" autocomplete="current-password"
+                         data-regla="actual" aria-describedby="clave-actual-error">
+                  <button class="acceso__ver" type="button" aria-controls="clave-actual">Mostrar</button>
+                </div>
+                <div class="campo__error" id="clave-actual-error"></div>
+              </div>
+              <div class="campo">
+                <label for="clave-nueva">Contraseña nueva</label>
+                <div class="acceso__clave">
+                  <input type="password" id="clave-nueva" name="nueva" autocomplete="new-password"
+                         data-regla="nueva" aria-describedby="clave-nueva-error clave-nueva-ayuda">
+                  <button class="acceso__ver" type="button" aria-controls="clave-nueva">Mostrar</button>
+                </div>
+                <div class="acceso__ayuda" id="clave-nueva-ayuda">Mínimo 8 caracteres.</div>
+                <div class="campo__error" id="clave-nueva-error"></div>
+              </div>
+              <div class="aviso" role="status"></div>
+              <button class="boton boton--principal" type="submit">Cambiar contraseña</button>
+            </form>
+          </section>
+        </div>
+      </div>
+
+      <!-- Sin sesión ------------------------------------------ -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver tu perfil</h1>
+        <p>Con tu cuenta puedes actualizar tus datos de contacto y tu contraseña.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="agendar.html">Agendar sin cuenta</a>
+        </div>
+      </section>
+
+      <!-- Con sesión de personal: esta sección es de clientas -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es para clientas</h1>
+        <p>Tu cuenta es del personal del salón; tu perfil se administra desde tu panel.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir a mi panel</a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Pie ---------------------------------------------------- -->
+  <footer class="pie">
+    <div class="contenedor pie__fila">
+      <div>
+        <p style="margin:0">Nails Express</p>
+        <p style="margin:0">+52 81 4621 0094</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/mi-perfil.js"></script>
+</body>
+</html>

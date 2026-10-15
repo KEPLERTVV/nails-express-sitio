@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Empleadas — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="personal">
+
+  <!-- Columna lateral del panel de administradora ----------- -->
+  <aside class="personal__lateral">
+    <a class="personal__logo" href="index.html">
+      <img src="img/logo sin fondo.svg" alt="Nails Express — ir al sitio público">
+    </a>
+    <nav class="personal__nav" aria-label="Panel de administradora">
+      <a href="panel-admin.html">Agenda general</a>
+      <a href="admin-ingresos.html">Ingresos y comisiones</a>
+      <a href="admin-catalogo.html">Catálogo y precios</a>
+      <a href="admin-empleadas.html" aria-current="page">Empleadas</a>
+    </nav>
+  </aside>
+
+  <div class="personal__principal">
+    <header class="personal__superior">
+      <a class="barra__sesion" href="#">Iniciar sesión</a>
+    </header>
+
+    <main class="personal__contenido">
+
+      <!-- Empleadas (solo administradora) --------------------- -->
+      <div id="cuenta-panel">
+        <div class="admin-encabezado">
+          <div>
+            <h1 class="personal__titulo">Empleadas</h1>
+            <p class="cuenta__intro">Las empleadas activas aparecen al agendar en su sucursal y pueden entrar a su panel.</p>
+          </div>
+          <button class="boton boton--principal" type="button" id="empleada-nueva">Agregar empleada</button>
+        </div>
+
+        <!-- Resultado de la última acción (alta, edición, desactivación) -->
+        <div class="aviso aviso--exito" id="empleadas-aviso" role="status" tabindex="-1"></div>
+
+        <div class="tabla__marco" tabindex="0" role="region" aria-label="Lista de empleadas">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Empleada</th>
+                <th scope="col">Sucursal</th>
+                <th scope="col">Especialidades</th>
+                <th scope="col" class="tabla__numero">Comisión</th>
+                <th scope="col">Estado</th>
+                <th scope="col"><span class="solo-lector">Acciones</span></th>
+              </tr>
+            </thead>
+            <tbody id="tabla-empleadas"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver el panel</h1>
+        <p>Esta sección es para la administración de Nails Express.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="index.html">Ir al sitio</a>
+        </div>
+      </section>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es solo para la administradora</h1>
+        <p>Tu cuenta no tiene acceso al panel de administración.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir a mi panel</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Ventana para agregar o editar una empleada --------------- -->
+  <!-- Reusa los estilos del modal de acceso (.acceso) -->
+  <dialog class="acceso" id="ventana-empleada" aria-labelledby="ventana-titulo">
+    <div class="acceso__cuerpo">
+      <h2 class="acceso__titulo" id="ventana-titulo">Agregar empleada</h2>
+      <form class="formulario" id="form-empleada" novalidate>
+        <div class="campo">
+          <label for="empleada-nombre">Nombre completo</label>
+          <input type="text" id="empleada-nombre" autocomplete="off" data-regla="nombre"
+                 aria-describedby="empleada-nombre-error">
+          <div class="campo__error" id="empleada-nombre-error"></div>
+        </div>
+        <div class="campo">
+          <label for="empleada-correo">Correo</label>
+          <input type="email" id="empleada-correo" autocomplete="off" autocapitalize="none" spellcheck="false"
+                 data-regla="correo" aria-describedby="empleada-correo-error">
+          <div class="campo__error" id="empleada-correo-error"></div>
+        </div>
+        <div class="campo">
+          <label for="empleada-telefono">Teléfono</label>
+          <input type="tel" id="empleada-telefono" autocomplete="off" inputmode="tel"
+                 data-regla="telefono" aria-describedby="empleada-telefono-error">
+          <div class="campo__error" id="empleada-telefono-error"></div>
+        </div>
+        <div class="formulario__par">
+          <div class="campo">
+            <label for="empleada-sucursal">Sucursal</label>
+            <select id="empleada-sucursal" data-regla="sucursal" aria-describedby="empleada-sucursal-error"></select>
+            <div class="campo__error" id="empleada-sucursal-error"></div>
+          </div>
+          <div class="campo">
+            <label for="empleada-comision">Comisión (%)</label>
+            <input type="number" id="empleada-comision" inputmode="numeric" min="0" max="100" step="1"
+                   data-regla="comision" aria-describedby="empleada-comision-error">
+            <div class="campo__error" id="empleada-comision-error"></div>
+          </div>
+        </div>
+        <fieldset class="campo casillas" id="empleada-especialidades" data-regla="especialidades"
+                  aria-describedby="empleada-especialidades-error">
+          <legend>Especialidades</legend>
+          <div class="casillas__lista" id="empleada-especialidades-lista"></div>
+          <div class="campo__error" id="empleada-especialidades-error"></div>
+        </fieldset>
+        <div class="aviso" role="status"></div>
+        <button class="boton boton--principal acceso__enviar" type="submit" id="empleada-guardar">Guardar</button>
+      </form>
+    </div>
+    <button class="acceso__cerrar" type="button" id="ventana-cerrar" aria-label="Cerrar">&times;</button>
+  </dialog>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/admin-empleadas.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi agenda — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="personal">
+
+  <!-- Columna lateral del panel ----------------------------- -->
+  <aside class="personal__lateral">
+    <a class="personal__logo" href="index.html">
+      <img src="img/logo sin fondo.svg" alt="Nails Express — ir al sitio público">
+    </a>
+    <nav class="personal__nav" aria-label="Panel de empleada">
+      <a href="panel-empleada.html" aria-current="page">Mi agenda</a>
+      <a href="disponibilidad.html">Disponibilidad</a>
+    </nav>
+  </aside>
+
+  <div class="personal__principal">
+    <!-- Barra superior: sesion.js pone aquí el menú del usuario -->
+    <header class="personal__superior">
+      <a class="barra__sesion" href="#">Iniciar sesión</a>
+    </header>
+
+    <main class="personal__contenido">
+
+      <!-- Agenda del día (solo empleadas) --------------------- -->
+      <div id="cuenta-panel">
+        <p class="personal__contexto" id="agenda-contexto"></p>
+        <h1 class="personal__titulo" id="agenda-fecha"></h1>
+
+        <div class="metricas">
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-citas"></strong>
+            <span class="metrica__nombre">Citas hoy</span>
+          </div>
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-libres"></strong>
+            <span class="metrica__nombre">Espacios libres</span>
+          </div>
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-ingreso"></strong>
+            <span class="metrica__nombre">Ingreso estimado</span>
+          </div>
+          <a class="boton boton--secundario metricas__accion" href="disponibilidad.html">Registrar disponibilidad</a>
+        </div>
+
+        <!-- Resultado de la última acción (atendida, cancelada, etc.) -->
+        <div class="aviso aviso--exito agenda__aviso" id="agenda-aviso" role="status" tabindex="-1"></div>
+
+        <!-- Buscador: la clienta llega con su folio, o llama para un cambio -->
+        <section class="buscador" aria-labelledby="titulo-buscar">
+          <h2 class="personal__subtitulo" id="titulo-buscar">Buscar cita</h2>
+          <form class="formulario buscador__form" id="form-buscar" role="search">
+            <div class="campo">
+              <label for="buscar-texto">Folio o teléfono de la clienta</label>
+              <input type="search" id="buscar-texto" autocomplete="off" autocapitalize="characters"
+                     spellcheck="false" placeholder="NE-K7P3QA o 81 1234 5678" aria-describedby="buscar-ayuda">
+            </div>
+            <button class="boton boton--principal" type="submit">Buscar</button>
+          </form>
+          <p class="disponibilidad__nota" id="buscar-ayuda">Con el teléfono bastan los últimos 4 dígitos.</p>
+          <div class="buscador__resultados" id="buscar-resultados" data-zona="busqueda" aria-live="polite"></div>
+        </section>
+
+        <h2 class="personal__subtitulo">Agenda</h2>
+        <ol class="agenda" id="agenda-lista" data-zona="agenda"></ol>
+
+        <!-- Citas de su sucursal sin empleada asignada: las toma quien esté libre -->
+        <section id="seccion-sin-asignar" class="oculto" aria-labelledby="titulo-sin-asignar">
+          <h2 class="personal__subtitulo" id="titulo-sin-asignar">Sin preferencia en tu sucursal</h2>
+          <p class="disponibilidad__nota">Clientas que eligieron "Sin preferencia". Si la atiendes tú, al marcarla como atendida queda a tu nombre.</p>
+          <ol class="agenda agenda--sin-asignar" id="agenda-sin-asignar" data-zona="sin-asignar"></ol>
+        </section>
+      </div>
+
+      <!-- Sin sesión ---------------------------------------- -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver tu agenda</h1>
+        <p>Esta sección es para el personal de Nails Express.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="index.html">Ir al sitio</a>
+        </div>
+      </section>
+
+      <!-- Con sesión, pero no es empleada ------------------- -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es solo para empleadas</h1>
+        <p>Tu cuenta no tiene acceso a la agenda del personal.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir al sitio</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <!-- reprogramar.js inserta su propia ventana -->
+  <script src="js/reprogramar.js"></script>
+  <script src="js/panel-empleada.js"></script>
+</body>
+</html>

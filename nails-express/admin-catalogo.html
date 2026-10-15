@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo y precios — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="personal">
+
+  <!-- Columna lateral del panel de administradora ----------- -->
+  <aside class="personal__lateral">
+    <a class="personal__logo" href="index.html">
+      <img src="img/logo sin fondo.svg" alt="Nails Express — ir al sitio público">
+    </a>
+    <nav class="personal__nav" aria-label="Panel de administradora">
+      <a href="panel-admin.html">Agenda general</a>
+      <a href="admin-ingresos.html">Ingresos y comisiones</a>
+      <a href="admin-catalogo.html" aria-current="page">Catálogo y precios</a>
+      <a href="admin-empleadas.html">Empleadas</a>
+    </nav>
+  </aside>
+
+  <div class="personal__principal">
+    <header class="personal__superior">
+      <a class="barra__sesion" href="#">Iniciar sesión</a>
+    </header>
+
+    <main class="personal__contenido">
+
+      <!-- Catálogo (solo administradora) ---------------------- -->
+      <div id="cuenta-panel">
+        <h1 class="personal__titulo">Catálogo y precios</h1>
+        <p class="cuenta__intro">Los cambios se ven de inmediato en el sitio: portada, cotizador y agendado. Las citas ya agendadas conservan el precio con el que se apartaron.</p>
+
+        <!-- Servicios -->
+        <section class="cuenta__bloque cuenta__tarjeta-blanca" aria-labelledby="titulo-servicios">
+          <h2 id="titulo-servicios">Servicios</h2>
+          <form class="formulario" id="form-servicios" novalidate>
+            <div class="tabla__marco">
+              <table class="tabla tabla--editable">
+                <thead>
+                  <tr>
+                    <th scope="col">Servicio</th>
+                    <th scope="col">Precio (MXN)</th>
+                    <th scope="col">Duración (min)</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-servicios"></tbody>
+              </table>
+            </div>
+            <div class="aviso" role="status"></div>
+            <button class="boton boton--principal" type="submit">Guardar servicios</button>
+          </form>
+        </section>
+
+        <!-- Diseños -->
+        <section class="cuenta__bloque cuenta__tarjeta-blanca" aria-labelledby="titulo-disenos">
+          <h2 id="titulo-disenos">Diseños</h2>
+          <form class="formulario" id="form-disenos" novalidate>
+            <div class="tabla__marco">
+              <table class="tabla tabla--editable">
+                <thead>
+                  <tr>
+                    <th scope="col">Diseño</th>
+                    <th scope="col">Costo extra (MXN)</th>
+                    <th scope="col">Tiempo extra (min)</th>
+                  </tr>
+                </thead>
+                <tbody id="tabla-disenos"></tbody>
+              </table>
+            </div>
+            <div class="aviso" role="status"></div>
+            <button class="boton boton--principal" type="submit">Guardar diseños</button>
+          </form>
+        </section>
+
+        <!-- Tonos -->
+        <section class="cuenta__bloque cuenta__tarjeta-blanca" aria-labelledby="titulo-tonos">
+          <h2 id="titulo-tonos">Tonos</h2>
+          <p class="disponibilidad__nota">Activa un tono para marcarlo como agotado o disponible. Se guarda al momento.</p>
+          <div class="tonos-admin" id="tonos-admin"></div>
+          <div class="aviso aviso--exito" id="tonos-aviso" role="status"></div>
+        </section>
+      </div>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver el panel</h1>
+        <p>Esta sección es para la administración de Nails Express.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="index.html">Ir al sitio</a>
+        </div>
+      </section>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es solo para la administradora</h1>
+        <p>Tu cuenta no tiene acceso al panel de administración.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir a mi panel</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/admin-catalogo.js"></script>
+</body>
+</html>

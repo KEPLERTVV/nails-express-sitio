@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis citas — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+  <!-- Barra superior ---------------------------------------- -->
+  <header class="barra">
+    <div class="contenedor barra__fila">
+      <a class="barra__logo" href="index.html"><img src="img/logo sin fondo.svg" alt="Nails Express"></a>
+      <ul class="barra__menu">
+        <li><a href="index.html#catalogo">Catálogo</a></li>
+        <li><a href="index.html#cotizar">Cotizar</a></li>
+        <li><a href="index.html#sucursales">Sucursales</a></li>
+      </ul>
+      <div class="barra__acciones">
+        <a class="barra__sesion" href="#">Iniciar sesión</a>
+        <a class="boton boton--principal" href="agendar.html">Agendar</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="cuenta">
+    <div class="contenedor">
+
+      <!-- Panel de la clienta (solo con sesión) -------------- -->
+      <div class="cuenta__rejilla" id="cuenta-panel">
+
+        <aside class="cuenta__lateral">
+          <div class="cuenta__tarjeta">
+            <span class="cuenta__inicial" id="cuenta-inicial" aria-hidden="true"></span>
+            <div class="cuenta__quien">
+              <p class="cuenta__nombre" id="cuenta-nombre"></p>
+              <p class="cuenta__correo" id="cuenta-correo"></p>
+            </div>
+          </div>
+          <nav class="cuenta__nav" aria-label="Mi cuenta">
+            <a href="mis-citas.html" aria-current="page">Mis citas</a>
+            <a href="mi-perfil.html">Mi perfil</a>
+          </nav>
+          <a class="boton boton--principal cuenta__agendar" href="agendar.html">Agendar nueva cita</a>
+        </aside>
+
+        <div class="cuenta__contenido">
+          <h1>Mis citas</h1>
+          <p class="cuenta__intro">Consulta tus próximas citas, cancélalas si no puedes llegar o vuelve a pedir un servicio que ya te hiciste.</p>
+
+          <!-- Mensajes al cancelar, leídos por lectores de pantalla -->
+          <div class="aviso aviso--exito" id="citas-aviso" role="status"></div>
+
+          <section class="cuenta__bloque" aria-labelledby="titulo-proximas">
+            <h2 id="titulo-proximas" tabindex="-1">Próximas</h2>
+            <div class="citas" id="citas-proximas"></div>
+            <!-- Regla del wireframe 12; el límite está en HORAS_LIMITE de mis-citas.js -->
+            <p class="disponibilidad__nota tabla__nota">Puedes reprogramar o cancelar sin costo hasta 4 horas antes de tu cita.</p>
+          </section>
+
+          <section class="cuenta__bloque" aria-labelledby="titulo-historial">
+            <h2 id="titulo-historial">Historial</h2>
+            <div class="citas" id="citas-historial"></div>
+          </section>
+        </div>
+      </div>
+
+      <!-- Sin sesión ------------------------------------------ -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver tus citas</h1>
+        <p>Con tu cuenta puedes revisar tus citas próximas, cancelarlas y ver tu historial.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="agendar.html">Agendar sin cuenta</a>
+        </div>
+      </section>
+
+      <!-- Con sesión de personal: esta sección es de clientas -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es para clientas</h1>
+        <p>Tu cuenta es del personal del salón; tus citas están en tu agenda.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir a mi panel</a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Pie ---------------------------------------------------- -->
+  <footer class="pie">
+    <div class="contenedor pie__fila">
+      <div>
+        <p style="margin:0">Nails Express</p>
+        <p style="margin:0">+52 81 4621 0094</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <!-- reprogramar.js inserta su propia ventana -->
+  <script src="js/reprogramar.js"></script>
+  <script src="js/mis-citas.js"></script>
+</body>
+</html>

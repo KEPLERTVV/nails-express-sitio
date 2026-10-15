@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda tu cita — Nails Express</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+
+  <header class="barra">
+    <div class="contenedor barra__fila">
+      <a class="barra__logo" href="index.html"><img src="img/logo sin fondo.svg" alt="Nails Express"></a>
+      <ul class="barra__menu">
+        <li><a href="index.html#catalogo">Catálogo</a></li>
+        <li><a href="index.html#cotizar">Cotizar</a></li>
+        <li><a href="index.html#sucursales">Sucursales</a></li>
+      </ul>
+      <div class="barra__acciones">
+        <a class="barra__sesion" href="#">Iniciar sesión</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="seccion">
+    <div class="contenedor">
+
+      <!-- Aviso para el personal: ellas no agendan citas ------ -->
+      <section class="cuenta__vacio oculto" id="agendar-personal">
+        <h1>Las citas las agendan las clientas</h1>
+        <p>Tu cuenta es del personal del salón. Si una clienta necesita ayuda, puede agendar desde su celular o sin cuenta.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" id="agendar-ir-panel">Ir a mi panel</a>
+        </div>
+      </section>
+
+      <!-- Indicador de avance ------------------------------- -->
+      <div id="cabecera-pasos">
+        <div class="pasos">
+          <div class="paso paso--hecho" id="paso-1"></div>
+          <div class="paso" id="paso-2"></div>
+          <div class="paso" id="paso-3"></div>
+        </div>
+        <p class="pasos__texto" id="pasos-texto">Paso 1 de 3</p>
+        <h1 id="pasos-titulo">Servicio y sucursal</h1>
+      </div>
+
+      <div class="agendar" id="agendar">
+        <div>
+
+          <!-- PASO 1 -------------------------------------- -->
+          <section id="vista-1">
+            <h3>¿Qué servicio quieres?</h3>
+            <div class="opciones" id="op-servicios"></div>
+
+            <h3 style="margin-top:2.5rem">¿Quieres agregar un diseño?</h3>
+            <div class="opciones" id="op-disenos"></div>
+
+            <h3 style="margin-top:2.5rem">¿En qué sucursal?</h3>
+            <div class="opciones" id="op-sucursales"></div>
+          </section>
+
+          <!-- PASO 2 -------------------------------------- -->
+          <section id="vista-2" class="oculto">
+            <h3>¿Con quién quieres tu cita?</h3>
+            <div class="opciones" id="op-empleadas"></div>
+
+            <h3 style="margin-top:2.5rem">Elige el día</h3>
+            <div class="campo" style="max-width:260px">
+              <input type="date" id="fecha">
+            </div>
+
+            <h3 style="margin-top:1.5rem">Horarios disponibles</h3>
+            <div class="horas" id="op-horas"></div>
+            <p class="pasos__texto" style="margin-top:1rem">
+              Los horarios apagados ya están reservados.
+            </p>
+          </section>
+
+          <!-- PASO 3 -------------------------------------- -->
+          <section id="vista-3" class="oculto">
+            <h3>Tus datos</h3>
+            <div class="campo" id="campo-nombre">
+              <label for="nombre">Nombre completo</label>
+              <input type="text" id="nombre" autocomplete="name" placeholder="Como quieres que te llamemos">
+              <div class="campo__error">Escribe tu nombre para poder registrar la cita.</div>
+            </div>
+            <div class="campo" id="campo-telefono">
+              <label for="telefono">Teléfono</label>
+              <input type="tel" id="telefono" autocomplete="tel" placeholder="81 0000 0000">
+              <div class="campo__error">Necesitamos un teléfono a 10 dígitos para confirmarte.</div>
+            </div>
+
+            <h3 style="margin-top:2.5rem">¿Cómo quieres pagar?</h3>
+            <div class="opciones" id="op-pago">
+              <button class="opcion" type="button" data-pago="anticipo" aria-pressed="true">
+                <strong>Aparto con anticipo</strong>
+                <span>Pagas $200 ahora y el resto en sucursal.</span>
+              </button>
+              <button class="opcion" type="button" data-pago="sucursal" aria-pressed="false">
+                <strong>Pago todo en sucursal</strong>
+                <span>Liquidas al terminar el servicio.</span>
+              </button>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- Resumen lateral -------------------------------- -->
+        <aside class="resumen">
+          <h3>Tu cita</h3>
+          <div id="resumen-lineas"></div>
+          <div class="resumen__total">
+            <span>Total</span>
+            <strong id="resumen-total">$380</strong>
+          </div>
+          <button class="boton boton--principal" id="boton-siguiente" type="button">Continuar</button>
+          <button class="boton boton--secundario oculto" id="boton-atras" type="button" style="margin-top:.5rem">
+            Regresar
+          </button>
+        </aside>
+      </div>
+
+      <!-- Confirmación final ------------------------------- -->
+      <section class="confirmacion oculto" id="vista-lista">
+        <div class="confirmacion__marca">✓</div>
+        <h1>Tu cita quedó agendada</h1>
+        <p style="margin-inline:auto" id="confirmacion-texto"></p>
+        <p class="confirmacion__folio" id="confirmacion-folio"></p>
+        <!-- El folio es lo que la clienta presenta al llegar al salón -->
+        <p class="confirmacion__instruccion">Guarda este folio (una captura de pantalla sirve) y muéstralo al llegar.</p>
+        <p style="margin:1.5rem auto 0" id="confirmacion-cambios"></p>
+        <p style="margin:.5rem auto 0">Te mandamos un recordatorio por WhatsApp un día antes.</p>
+        <a class="boton boton--secundario" href="index.html" style="margin-top:1rem">Volver al inicio</a>
+      </section>
+
+    </div>
+  </main>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/agendar.js"></script>
+</body>
+</html>

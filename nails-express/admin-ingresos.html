@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ingresos y comisiones — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="personal">
+
+  <!-- Columna lateral del panel de administradora ----------- -->
+  <aside class="personal__lateral">
+    <a class="personal__logo" href="index.html">
+      <img src="img/logo sin fondo.svg" alt="Nails Express — ir al sitio público">
+    </a>
+    <nav class="personal__nav" aria-label="Panel de administradora">
+      <a href="panel-admin.html">Agenda general</a>
+      <a href="admin-ingresos.html" aria-current="page">Ingresos y comisiones</a>
+      <a href="admin-catalogo.html">Catálogo y precios</a>
+      <a href="admin-empleadas.html">Empleadas</a>
+    </nav>
+  </aside>
+
+  <div class="personal__principal">
+    <header class="personal__superior">
+      <a class="barra__sesion" href="#">Iniciar sesión</a>
+    </header>
+
+    <main class="personal__contenido">
+
+      <!-- Reporte del mes (solo administradora) --------------- -->
+      <div id="cuenta-panel">
+        <h1 class="personal__titulo">Ingresos y comisiones</h1>
+        <p class="cuenta__intro">Solo cuentan las citas que la empleada marcó como atendidas en el salón.</p>
+
+        <div class="admin-filtros">
+          <div class="filtros admin-filtros__grupo" id="filtro-sucursal" role="group" aria-label="Sucursal"></div>
+          <div class="campo admin-filtros__fecha">
+            <label for="reporte-mes">Mes</label>
+            <select id="reporte-mes"></select>
+          </div>
+        </div>
+
+        <div class="metricas metricas--cuatro">
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-citas"></strong>
+            <span class="metrica__nombre">Citas realizadas</span>
+          </div>
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-ingresos"></strong>
+            <span class="metrica__nombre">Ingresos</span>
+          </div>
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-comisiones"></strong>
+            <span class="metrica__nombre">Comisiones a pagar</span>
+          </div>
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-salon"></strong>
+            <span class="metrica__nombre">Para el salón</span>
+          </div>
+        </div>
+        <!-- Citas que no suman: no llegaron o falta marcarlas -->
+        <p class="disponibilidad__nota reporte__pendientes" id="reporte-pendientes"></p>
+
+        <h2 class="personal__subtitulo" id="titulo-empleadas">Por empleada</h2>
+        <div class="tabla__marco" tabindex="0" role="region" aria-labelledby="titulo-empleadas">
+          <table class="tabla">
+            <thead>
+              <tr>
+                <th scope="col">Empleada</th>
+                <th scope="col">Sucursal</th>
+                <th scope="col" class="tabla__numero">Citas</th>
+                <th scope="col" class="tabla__numero">Ingresos</th>
+                <th scope="col" class="tabla__numero">Comisión</th>
+                <th scope="col" class="tabla__numero">A pagar</th>
+              </tr>
+            </thead>
+            <tbody id="tabla-empleadas"></tbody>
+            <tfoot id="tabla-empleadas-total"></tfoot>
+          </table>
+        </div>
+
+        <!-- Solo con "Ambas sucursales": comparación entre las dos -->
+        <section id="seccion-sucursales">
+          <h2 class="personal__subtitulo" id="titulo-sucursales">Por sucursal</h2>
+          <div class="tabla__marco" tabindex="0" role="region" aria-labelledby="titulo-sucursales">
+            <table class="tabla">
+              <thead>
+                <tr>
+                  <th scope="col">Sucursal</th>
+                  <th scope="col" class="tabla__numero">Citas</th>
+                  <th scope="col" class="tabla__numero">Ingresos</th>
+                  <th scope="col" class="tabla__numero">Comisiones</th>
+                  <th scope="col" class="tabla__numero">Para el salón</th>
+                </tr>
+              </thead>
+              <tbody id="tabla-sucursales"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <p class="disponibilidad__nota tabla__nota">La comisión se calcula con el porcentaje actual de cada empleada (se cambia en Empleadas).</p>
+      </div>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver el panel</h1>
+        <p>Esta sección es para la administración de Nails Express.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="index.html">Ir al sitio</a>
+        </div>
+      </section>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es solo para la administradora</h1>
+        <p>Tu cuenta no tiene acceso al panel de administración.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir a mi panel</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/admin-ingresos.js"></script>
+</body>
+</html>

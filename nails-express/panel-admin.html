@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Agenda general — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="personal">
+
+  <!-- Columna lateral del panel de administradora ----------- -->
+  <aside class="personal__lateral">
+    <a class="personal__logo" href="index.html">
+      <img src="img/logo sin fondo.svg" alt="Nails Express — ir al sitio público">
+    </a>
+    <nav class="personal__nav" aria-label="Panel de administradora">
+      <a href="panel-admin.html" aria-current="page">Agenda general</a>
+      <a href="admin-ingresos.html">Ingresos y comisiones</a>
+      <a href="admin-catalogo.html">Catálogo y precios</a>
+      <a href="admin-empleadas.html">Empleadas</a>
+    </nav>
+  </aside>
+
+  <div class="personal__principal">
+    <!-- Barra superior: sesion.js pone aquí el menú del usuario -->
+    <header class="personal__superior">
+      <a class="barra__sesion" href="#">Iniciar sesión</a>
+    </header>
+
+    <main class="personal__contenido">
+
+      <!-- Agenda de ambas sucursales (solo administradora) ---- -->
+      <div id="cuenta-panel">
+        <p class="personal__contexto">Ambas sucursales</p>
+        <h1 class="personal__titulo" id="agenda-fecha"></h1>
+
+        <!-- Filtros: sucursal y día -->
+        <div class="admin-filtros">
+          <div class="filtros admin-filtros__grupo" id="filtro-sucursal" role="group" aria-label="Sucursal"></div>
+          <div class="campo admin-filtros__fecha">
+            <label for="agenda-dia">Día</label>
+            <input type="date" id="agenda-dia">
+          </div>
+        </div>
+
+        <div class="metricas metricas--tres">
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-citas"></strong>
+            <span class="metrica__nombre">Citas del día</span>
+          </div>
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-ingreso"></strong>
+            <span class="metrica__nombre">Ingreso estimado</span>
+          </div>
+          <div class="metrica">
+            <strong class="metrica__valor" id="metrica-empleadas"></strong>
+            <span class="metrica__nombre">Empleadas activas</span>
+          </div>
+        </div>
+
+        <h2 class="personal__subtitulo">Citas</h2>
+        <ol class="agenda" id="agenda-lista" aria-live="polite"></ol>
+      </div>
+
+      <!-- Sin sesión ---------------------------------------- -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver el panel</h1>
+        <p>Esta sección es para la administración de Nails Express.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="index.html">Ir al sitio</a>
+        </div>
+      </section>
+
+      <!-- Con sesión, pero no es la administradora ---------- -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es solo para la administradora</h1>
+        <p>Tu cuenta no tiene acceso al panel de administración.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir a mi panel</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/panel-admin.js"></script>
+</body>
+</html>

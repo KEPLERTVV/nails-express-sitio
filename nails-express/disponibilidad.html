@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mi disponibilidad — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="personal">
+
+  <!-- Columna lateral del panel ----------------------------- -->
+  <aside class="personal__lateral">
+    <a class="personal__logo" href="index.html">
+      <img src="img/logo sin fondo.svg" alt="Nails Express — ir al sitio público">
+    </a>
+    <nav class="personal__nav" aria-label="Panel de empleada">
+      <a href="panel-empleada.html">Mi agenda</a>
+      <a href="disponibilidad.html" aria-current="page">Disponibilidad</a>
+    </nav>
+  </aside>
+
+  <div class="personal__principal">
+    <!-- Barra superior: sesion.js pone aquí el menú del usuario -->
+    <header class="personal__superior">
+      <a class="barra__sesion" href="#">Iniciar sesión</a>
+    </header>
+
+    <main class="personal__contenido">
+
+      <!-- Disponibilidad semanal (solo empleadas) ------------- -->
+      <div id="cuenta-panel">
+        <h1 class="personal__titulo">Mi disponibilidad</h1>
+        <p class="cuenta__intro">Marca los horarios en los que puedes atender. Los bloques cerrados no se ofrecen a las clientas al agendar.</p>
+
+        <div class="semana">
+          <p class="semana__rango" id="semana-rango" aria-live="polite"></p>
+          <div class="semana__nav">
+            <button class="boton boton--secundario" type="button" id="semana-anterior">Semana anterior</button>
+            <button class="boton boton--secundario" type="button" id="semana-siguiente">Semana siguiente</button>
+          </div>
+        </div>
+
+        <!-- La tabla se desplaza de lado en pantallas chicas -->
+        <div class="rejilla-horas__marco" tabindex="0" role="region" aria-labelledby="semana-rango">
+          <table class="rejilla-horas">
+            <caption class="solo-lector">Disponibilidad por día y horario. Activa un bloque para abrirlo o cerrarlo.</caption>
+            <thead id="rejilla-dias"></thead>
+            <tbody id="rejilla-bloques"></tbody>
+          </table>
+        </div>
+
+        <div class="disponibilidad__pie">
+          <p class="disponibilidad__nota">Los bloques ya reservados por clientas no se pueden cerrar.</p>
+          <div class="disponibilidad__guardar">
+            <span class="disponibilidad__estado" id="disponibilidad-estado" role="status"></span>
+            <button class="boton boton--principal" type="button" id="disponibilidad-guardar">Guardar cambios</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sin sesión ---------------------------------------- -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para registrar tu disponibilidad</h1>
+        <p>Esta sección es para el personal de Nails Express.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="index.html">Ir al sitio</a>
+        </div>
+      </section>
+
+      <!-- Con sesión, pero no es empleada ------------------- -->
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es solo para empleadas</h1>
+        <p>Tu cuenta no tiene acceso a la disponibilidad del personal.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir al sitio</a>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="js/datos.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/disponibilidad.js"></script>
+</body>
+</html>

@@ -64,7 +64,10 @@
   }
 
   function guardar(clave, valor) {
-    try { localStorage.setItem(clave, JSON.stringify(valor)); } catch (e) { /* sin almacenamiento */ }
+    try {
+      localStorage.setItem(clave, JSON.stringify(valor));
+      return true;
+    } catch (e) { return false; }
   }
 
   function borrar(clave) {
@@ -88,7 +91,7 @@
   // Inserta o reemplaza un registro dentro de lo guardado
   function guardarRegistro(claveAlmacen, registro, clave) {
     const guardados = leer(claveAlmacen, []).filter(x => x[clave] !== registro[clave]);
-    guardar(claveAlmacen, guardados.concat(registro));
+    return guardar(claveAlmacen, guardados.concat(registro));
   }
 
   function todasLasCuentas() {
@@ -130,6 +133,20 @@
       sucursal:       cuenta.sucursal,
       activa:         cuenta.activa !== false,
       porcentajeComision: cuenta.porcentajeComision || 0
+    };
+  }
+
+  function empleadasActivas() {
+    return todasLasCuentas()
+      .filter(c => c.rol === "empleada" && c.activa !== false)
+      .map(datosDeEmpleada);
+  }
+
+  function contextoAgenda() {
+    return {
+      citas: todasLasCitas(), empleadas: empleadasActivas(),
+      servicios: SERVICIOS, disenos: DISENOS, sucursales: SUCURSALES,
+      horarios: HORARIOS, cerrados: leer(CLAVE_DISPONIBILIDAD, {})
     };
   }
 
@@ -590,6 +607,10 @@
   // Si la sesión cambia en otra pestaña del navegador, se refleja aquí
   window.addEventListener("storage", e => {
     if (e.key === CLAVE_SESION) pintarBarra();
+    if (e.key === null || [CLAVE_CITAS, CLAVE_CUENTAS, CLAVE_DISPONIBILIDAD, CLAVE_CATALOGO].includes(e.key)) {
+      if (e.key === null || e.key === CLAVE_CATALOGO) aplicarCatalogo();
+      document.dispatchEvent(new CustomEvent("agenda:cambio"));
+    }
   });
 
   /* --- Funciones para las demás páginas ------------------------ */
@@ -630,10 +651,11 @@
     },
 
     // Empleadas activas: las que se ofrecen a la clienta al agendar
-    empleadas() {
-      return todasLasCuentas()
-        .filter(c => c.rol === "empleada" && c.activa !== false)
-        .map(datosDeEmpleada);
+    empleadas: empleadasActivas,
+
+    empleadasPara(servicioId, sucursalId) {
+      return AgendaCitas.empleadasPara({ empleadas: empleadasActivas(), servicios: SERVICIOS,
+        servicioId, sucursalId });
     },
 
     // Cualquier empleada por id, aunque ya no esté activa (para el
@@ -673,7 +695,27 @@
     },
 
     guardarCita(cita) {
-      guardarRegistro(CLAVE_CITAS, cita, "folio");
+      return guardarRegistro(CLAVE_CITAS, cita, "folio");
+    },
+
+    duracionCita(cita) {
+      return AgendaCitas.duracionDe(cita, SERVICIOS, DISENOS);
+    },
+
+    validarCita(cita, { ignorarFolio } = {}) {
+      return AgendaCitas.validar({ ...contextoAgenda(), cita, ignorarFolio });
+    },
+
+    // Crear y reprogramar pasan por la misma revisión justo antes de guardar.
+    // guardarCita se conserva para cambios de estado e historial.
+    reservarCita(cita, opciones) {
+      const resultado = this.validarCita(cita, opciones);
+      if (!resultado.valida) return resultado;
+      if (!this.guardarCita(cita)) {
+        return { valida: false, codigo: "almacenamiento",
+          mensaje: "No pudimos guardar tu cita en este navegador. Revisa que permita guardar datos e inténtalo de nuevo." };
+      }
+      return resultado;
     },
 
     /* --- Folio: con él se identifica la clienta en el salón ---- */
@@ -729,46 +771,17 @@
       return this.disponibilidadDe(idEmpleada)[fecha] || [];
     },
 
-    /* Horas que NO se pueden ofrecer para una cita. La usan el
-       agendado y la reprogramación, para que ambos sigan la misma regla.
-       - empleadaId: la empleada elegida, o 0 para "sin preferencia".
-       - ignorarFolio: al reprogramar, la propia cita no se bloquea sola.
-       Equivale a Disponibilidad.estaLibre() del diagrama de clases.     */
-    horasNoDisponibles({ empleadaId, sucursalId, fecha, ignorarFolio }) {
-      const citasDelDia = todasLasCitas().filter(c =>
-        c.fecha === fecha && c.estado !== "cancelada" && c.folio !== ignorarFolio);
+    /* Incluye servicio, duración completa y reservas sin asignar.
+       ignorarFolio excluye la propia cita cuando se reprograma. */
+    horasNoDisponibles({ ignorarFolio, ...cita }) {
+      const contexto = contextoAgenda();
+      return new Set(HORARIOS.filter(hora => !AgendaCitas.validar({
+        ...contexto, cita: { ...cita, hora }, ignorarFolio
+      }).valida));
+    },
 
-      // Por cada empleada activa de la sucursal: horas con cita o cerradas por ella
-      const delaSucursal = this.empleadas()
-        .filter(e => e.sucursal === sucursalId)
-        .map(e => {
-          const ocupadas = new Set(this.cerradosDe(e.id, fecha));
-          citasDelDia.filter(c => c.empleadaId === e.id).forEach(c => ocupadas.add(c.hora));
-          return { id: e.id, ocupadas };
-        });
-
-      const ahora = new Date();
-      const bloqueadas = new Set();
-
-      HORARIOS.forEach(hora => {
-        // Las horas que ya pasaron no se ofrecen
-        if (new Date(fecha + "T" + hora) <= ahora) { bloqueadas.add(hora); return; }
-
-        // Cada cita "sin preferencia" de esa hora aparta a alguna empleada
-        // libre de la sucursal, sin decir cuál. Si no sobra nadie, la hora
-        // se apaga para todas las opciones.
-        const sinPreferencia = citasDelDia.filter(c =>
-          c.empleadaId === 0 && c.sucursalId === sucursalId && c.hora === hora).length;
-        const libres = delaSucursal.filter(e => !e.ocupadas.has(hora)).length;
-        if (libres <= sinPreferencia) { bloqueadas.add(hora); return; }
-
-        // Con una empleada elegida: además, ella debe estar libre
-        if (empleadaId) {
-          const elegida = delaSucursal.find(e => e.id === empleadaId);
-          if (!elegida || elegida.ocupadas.has(hora)) bloqueadas.add(hora);
-        }
-      });
-      return bloqueadas;
+    bloquesReservados(empleadaId) {
+      return AgendaCitas.bloquesReservados({ ...contextoAgenda(), empleadaId });
     }
   };
 

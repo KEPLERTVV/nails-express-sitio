@@ -82,9 +82,9 @@ const Reprogramar = (function () {
   function pintar() {
     const { cita } = moviendo;
 
-    // Empleadas activas de la misma sucursal, más "Sin preferencia".
-    // Si la empleada asignada ya no está activa, se cambia a "Sin preferencia".
-    const opciones = Sesion.empleadas().filter(e => e.sucursal === cita.sucursalId).concat(SIN_PREFERENCIA);
+    // Solo ofrecer empleadas activas que realizan el servicio de la cita.
+    const especialistas = Sesion.empleadasPara(cita.servicioId, cita.sucursalId);
+    const opciones = especialistas.concat(SIN_PREFERENCIA);
     if (!opciones.some(e => e.id === moviendo.empleadaId)) moviendo.empleadaId = 0;
 
     document.getElementById("reprogramar-empleadas").innerHTML = opciones.map(e => `
@@ -98,6 +98,9 @@ const Reprogramar = (function () {
       ? Sesion.horasNoDisponibles({
           empleadaId:   moviendo.empleadaId,
           sucursalId:   cita.sucursalId,
+          servicioId:   cita.servicioId,
+          disenoId:     cita.disenoId,
+          duracion:     Sesion.duracionCita(cita),
           fecha:        moviendo.fecha,
           ignorarFolio: cita.folio
         })
@@ -108,11 +111,13 @@ const Reprogramar = (function () {
       <button class="hora" type="button" data-hora="${h}" aria-pressed="${moviendo.hora === h}"
               ${ocupadas.has(h) ? "disabled" : ""}>${h}</button>`).join("");
 
-    document.getElementById("reprogramar-ayuda").textContent = !moviendo.fecha
+    document.getElementById("reprogramar-ayuda").textContent = !especialistas.length
+      ? "No hay empleadas que realicen este servicio en esta sucursal. Contacta a la sucursal para cambiar tu cita."
+      : !moviendo.fecha
       ? "Elige primero el día."
       : ocupadas.size === HORARIOS.length
-        ? "Ese día ya no hay horarios libres; prueba con otro día u otra empleada."
-        : "Los horarios apagados ya están ocupados.";
+        ? "No hay horarios válidos para el servicio completo ese día. Prueba otra fecha o empleada."
+        : "Los horarios consideran duración, reservas y disponibilidad de la empleada.";
   }
 
   /* --- Eventos ----------------------------------------------- */
@@ -159,7 +164,13 @@ const Reprogramar = (function () {
 
     const nueva = { ...cita, fecha, hora, empleadaId,
                     reprogramaciones: (cita.reprogramaciones || 0) + 1 };
-    Sesion.guardarCita(nueva);
+    const resultado = Sesion.reservarCita(nueva, { ignorarFolio: cita.folio });
+    if (!resultado.valida) {
+      aviso.textContent = resultado.mensaje;
+      pintar();
+      aviso.focus();
+      return;
+    }
     const despues = alGuardar;
     ventana.close();
     if (despues) despues(nueva);

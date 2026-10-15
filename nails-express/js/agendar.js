@@ -26,9 +26,9 @@ function escapar(texto) {
   return div.innerHTML;
 }
 
-// Empleadas activas de una sucursal (salen de las cuentas, no de una lista aparte)
+// Solo empleadas activas que realizan el servicio en la sucursal elegida.
 function empleadasDe(idSucursal) {
-  return Sesion.empleadas().filter(e => e.sucursal === idSucursal);
+  return Sesion.empleadasPara(cita.servicio.id, idSucursal);
 }
 
 /* --- Si llegamos con selecciones desde la portada ------------ */
@@ -66,30 +66,33 @@ function pintarPaso() {
     tarjetas("op-servicios", SERVICIOS,
       s => s.id === cita.servicio.id,
       s => `<strong>${s.nombre}</strong><span>${pesos(s.precio)} · ${s.duracion} min</span>`,
-      s => { cita.servicio = s; });
+      s => { cita.servicio = s; cita.hora = ""; avisarAgenda(""); });
 
     tarjetas("op-disenos", DISENOS,
       d => d.id === cita.diseno.id,
       d => `<strong>${d.nombre}</strong><span>${d.costoExtra ? "+" + pesos(d.costoExtra) + " · +" + d.duracionExtra + " min" : "Solo esmaltado"}</span>`,
-      d => { cita.diseno = d; });
+      d => { cita.diseno = d; cita.hora = ""; avisarAgenda(""); });
 
     tarjetas("op-sucursales", SUCURSALES,
       s => s.id === cita.sucursal.id,
       s => `<strong>${s.nombre}</strong><span>${s.direccion}</span>`,
-      s => { cita.sucursal = s; });
+      s => { cita.sucursal = s; cita.hora = ""; avisarAgenda(""); });
   }
 
   if (paso === 2) {
-    // solo las empleadas activas de la sucursal elegida, más "Sin preferencia"
+    // Las especialidades se respetan también al volver desde otro paso.
     const disponibles = empleadasDe(cita.sucursal.id).concat(SIN_PREFERENCIA);
     if (!disponibles.some(e => e.id === cita.empleada.id)) {
       cita.empleada = SIN_PREFERENCIA;
+      cita.hora = "";
+    } else {
+      cita.empleada = disponibles.find(e => e.id === cita.empleada.id);
     }
 
     tarjetas("op-empleadas", disponibles,
       e => e.id === cita.empleada.id,
-      e => `<strong>${escapar(e.nombre)}</strong><span>${e.especialidades.length ? escapar(e.especialidades.join(" · ")) : "La primera que se desocupe"}</span>`,
-      e => { cita.empleada = e; cita.hora = ""; });
+      e => `<strong>${escapar(e.nombre)}</strong><span>${e.especialidades.length ? escapar(e.especialidades.join(" · ")) : "La asignamos al llegar al salón"}</span>`,
+      e => { cita.empleada = e; cita.hora = ""; avisarAgenda(""); });
 
     pintarHoras();
   }
@@ -104,19 +107,38 @@ function pintarPaso() {
 /* --- Horarios: refleja la clase Disponibilidad --------------- */
 // La regla vive en sesion.js (Sesion.horasNoDisponibles) porque
 // también la usa la reprogramación en mis-citas.html
-function horasNoDisponibles() {
-  if (!cita.fecha) return new Set();
-  return Sesion.horasNoDisponibles({
+function datosDeHorario() {
+  return {
     empleadaId: cita.empleada.id,
     sucursalId: cita.sucursal.id,
-    fecha:      cita.fecha
-  });
+    servicioId: cita.servicio.id,
+    disenoId:   cita.diseno.id,
+    duracion:   calcularDuracion(cita.servicio, cita.diseno),
+    fecha:      cita.fecha,
+    hora:       cita.hora
+  };
+}
+
+function horasNoDisponibles() {
+  return Sesion.horasNoDisponibles(datosDeHorario());
+}
+
+function avisarAgenda(mensaje) {
+  document.getElementById("agendar-aviso").textContent = mensaje;
 }
 
 function pintarHoras() {
   const ocupados = horasNoDisponibles();
   // si la hora elegida dejó de estar libre (cambió fecha o empleada), se suelta
-  if (cita.hora && ocupados.has(cita.hora)) cita.hora = "";
+  if (cita.hora && (!HORARIOS.includes(cita.hora) || ocupados.has(cita.hora))) cita.hora = "";
+
+  document.getElementById("agendar-ayuda").textContent = !cita.fecha
+    ? "Elige primero el día para consultar los horarios."
+    : !empleadasDe(cita.sucursal.id).length
+      ? "No hay empleadas que realicen este servicio en esta sucursal. Elige otra sucursal o servicio."
+      : ocupados.size === HORARIOS.length
+        ? "No hay horarios para el servicio completo con esta opción. Prueba otro día, empleada o sucursal."
+        : "Los horarios disponibles consideran la duración completa, las reservas y los bloques cerrados.";
 
   document.getElementById("op-horas").innerHTML = HORARIOS.map(h => {
     const libre = !ocupados.has(h);
@@ -183,8 +205,12 @@ function marcar(idCampo, valido) {
 
 function pasoValido() {
   if (paso === 2) {
-    if (!cita.fecha || !cita.hora) {
-      alert("Elige el día y la hora para continuar.");
+    const resultado = Sesion.validarCita(datosDeHorario());
+    if (!resultado.valida) {
+      pintarHoras();
+      pintarResumen();
+      avisarAgenda(resultado.mensaje);
+      document.getElementById("agendar-aviso").focus();
       return false;
     }
   }
@@ -202,6 +228,29 @@ function confirmar() {
   const folio  = Sesion.nuevoFolio();
   const sesion = Sesion.actual();
 
+  const resultado = Sesion.reservarCita({
+    ...datosDeHorario(),
+    folio,
+    clienteId:  sesion ? sesion.id : null,
+    colorId:    cita.color ? cita.color.id : null,
+    total:      calcularTotal(cita.servicio, cita.diseno),
+    pago:       cita.pago,
+    estado:     "activa",
+    nombre:     cita.nombre.trim(),
+    telefono:   Sesion.limpiarTelefono(cita.telefono)
+  });
+  if (!resultado.valida) {
+    if (resultado.codigo !== "almacenamiento") {
+      paso = 2;
+      mostrarPaso();
+    }
+    avisarAgenda(resultado.mensaje);
+    document.getElementById("agendar-aviso").focus();
+    return;
+  }
+
+  // La confirmación solo se muestra después de comprobar y guardar la reserva.
+  avisarAgenda("");
   document.getElementById("cabecera-pasos").classList.add("oculto");
   document.getElementById("agendar").classList.add("oculto");
   document.getElementById("vista-lista").classList.remove("oculto");
@@ -222,24 +271,6 @@ function confirmar() {
     ? "También la encuentras en Mis citas, donde puedes reprogramarla o cancelarla."
     : "Si necesitas cambiarla o cancelarla, llama al +52 81 4621 0094 y da tu folio.";
 
-  // Aquí iría el envío al servidor. Por ahora se guarda en el navegador.
-  Sesion.guardarCita({
-    folio,
-    clienteId:  sesion ? sesion.id : null,
-    servicioId: cita.servicio.id,
-    disenoId:   cita.diseno.id,
-    colorId:    cita.color ? cita.color.id : null,
-    sucursalId: cita.sucursal.id,
-    empleadaId: cita.empleada.id,
-    fecha:      cita.fecha,
-    hora:       cita.hora,
-    total:      calcularTotal(cita.servicio, cita.diseno),
-    duracion:   calcularDuracion(cita.servicio, cita.diseno),
-    pago:       cita.pago,
-    estado:     "activa",
-    nombre:     cita.nombre.trim(),
-    telefono:   Sesion.limpiarTelefono(cita.telefono)   // sin espacios: así se puede buscar
-  });
 }
 
 /* --- Si hay sesión, se rellenan los datos de contacto --------- */
@@ -284,15 +315,32 @@ document.getElementById("boton-siguiente").addEventListener("click", () => {
 });
 
 document.getElementById("boton-atras").addEventListener("click", () => {
+  avisarAgenda("");
   paso--;
   mostrarPaso();
 });
 
 document.getElementById("fecha").addEventListener("change", e => {
   cita.fecha = e.target.value;
+  avisarAgenda("");
   pintarHoras();     // cada día tiene sus propios bloques libres
   pintarResumen();
 });
+
+// Al volver a la pestaña o cambiar datos desde otra, la selección se revisa.
+function actualizarAgenda() {
+  if (paso < 2 || !document.getElementById("vista-lista").classList.contains("oculto")) return;
+  const resultado = cita.hora ? Sesion.validarCita(datosDeHorario()) : null;
+  if (resultado && !resultado.valida) paso = 2;
+  pintarPaso();
+  pintarResumen();
+  if (resultado && !resultado.valida) {
+    mostrarPaso();
+    avisarAgenda(resultado.mensaje);
+  }
+}
+document.addEventListener("agenda:cambio", actualizarAgenda);
+window.addEventListener("focus", actualizarAgenda);
 
 document.getElementById("nombre").addEventListener("input", e => {
   cita.nombre = e.target.value;

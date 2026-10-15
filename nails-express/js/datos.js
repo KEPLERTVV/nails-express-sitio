@@ -87,7 +87,19 @@ const USUARIOS = [
   { id: 4, nombre: "Karla Ruiz",     correo: "karla@nailsexpress.mx", telefono: "8187650002", contrasena: "empleada123", rol: "empleada",
     especialidades: ["Pedicura", "Gelish"],  sucursal: 1, activa: true, porcentajeComision: 35 },
   { id: 5, nombre: "Sofía Luna",     correo: "sofia@nailsexpress.mx", telefono: "8187650003", contrasena: "empleada123", rol: "empleada",
-    especialidades: ["Acrílico"],            sucursal: 2, activa: true, porcentajeComision: 40 }
+    especialidades: ["Acrílico"],            sucursal: 2, activa: true, porcentajeComision: 40 },
+
+  // Empleadas de demostración para probar capacidad y especialidades.
+  { id: 6, nombre: "Valeria López Demo", correo: "valeria.demo@example.com", telefono: "8110001001", contrasena: "empleada123", rol: "empleada",
+    especialidades: ["Gelish", "Acrílico"], sucursal: 1, activa: true, porcentajeComision: 40 },
+  { id: 7, nombre: "Daniela Ríos Demo", correo: "daniela.demo@example.com", telefono: "8110001002", contrasena: "empleada123", rol: "empleada",
+    especialidades: ["Gelish", "Pedicura"], sucursal: 2, activa: true, porcentajeComision: 35 },
+  { id: 8, nombre: "Camila Torres Demo", correo: "camila.demo@example.com", telefono: "8110001003", contrasena: "empleada123", rol: "empleada",
+    especialidades: ["Gelish"], sucursal: 1, activa: true, porcentajeComision: 35 },
+  { id: 9, nombre: "Renata García Demo", correo: "renata.demo@example.com", telefono: "8110001004", contrasena: "empleada123", rol: "empleada",
+    especialidades: ["Acrílico"], sucursal: 1, activa: true, porcentajeComision: 40 },
+  { id: 10, nombre: "Andrea Martínez Demo", correo: "andrea.demo@example.com", telefono: "8110001005", contrasena: "empleada123", rol: "empleada",
+    especialidades: ["Pedicura"], sucursal: 1, activa: true, porcentajeComision: 35 }
 ];
 
 /* Fecha local en formato AAAA-MM-DD (toISOString usa UTC y en

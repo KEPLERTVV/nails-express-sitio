@@ -18,8 +18,10 @@ function reserva(extra = {}) {
 function motor() {
   const ctx = vm.createContext({ Date: Reloj });
   vm.runInContext(source('datos.js') + '\n' + source('agenda-citas.js'), ctx);
+  // Equipo fijo para los escenarios de capacidad, independiente de nuevas demos.
   const datos = vm.runInContext(`({ servicios: SERVICIOS, disenos: DISENOS,
-    sucursales: SUCURSALES, horarios: HORARIOS, empleadas: USUARIOS.filter(e => e.rol === 'empleada') })`, ctx);
+    sucursales: SUCURSALES, horarios: HORARIOS,
+    empleadas: USUARIOS.filter(e => e.rol === 'empleada' && [2, 4, 5].includes(e.id)) })`, ctx);
   const agenda = vm.runInContext('AgendaCitas', ctx);
   return { agenda, datos, validar: (cita = {}, extra = {}) => agenda.validar({
     ...datos, citas: [], cerrados: {}, cita: reserva(cita), ...extra }) };
@@ -159,7 +161,8 @@ function entorno() {
   sandbox.window = sandbox;
   const ctx = vm.createContext(sandbox);
   for (const archivo of ['datos.js', 'agenda-citas.js', 'sesion.js']) vm.runInContext(source(archivo), ctx);
-  vm.runInContext('CITAS.length = 0', ctx);
+  vm.runInContext(`CITAS.length = 0;
+    USUARIOS.splice(0, USUARIOS.length, ...USUARIOS.filter(c => c.rol !== 'empleada' || [2, 4, 5].includes(c.id)))`, ctx);
   return { ctx, document, almacen, localStorage, run: code => vm.runInContext(code, ctx),
     cargar: name => vm.runInContext(source(name), ctx), evento: tipo => document.dispatchEvent({ type: tipo }) };
 }

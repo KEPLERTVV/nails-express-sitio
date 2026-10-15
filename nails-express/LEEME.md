@@ -112,6 +112,11 @@ simulado; la revisión visual en navegador se realiza por separado.
 | Empleada       | `ana@nailsexpress.mx`   | `empleada123` |
 | Empleada       | `karla@nailsexpress.mx` | `empleada123` |
 | Empleada       | `sofia@nailsexpress.mx` | `empleada123` |
+| Valeria (demo) | `valeria.demo@example.com` | `empleada123` |
+| Daniela (demo) | `daniela.demo@example.com` | `empleada123` |
+| Camila (demo) | `camila.demo@example.com` | `empleada123` |
+| Renata (demo) | `renata.demo@example.com` | `empleada123` |
+| Andrea (demo) | `andrea.demo@example.com` | `empleada123` |
 | Administradora | `laura@nailsexpress.mx` | `admin12345`  |
 
 Todo lo que se cambia en el sitio se guarda en el navegador (localStorage).

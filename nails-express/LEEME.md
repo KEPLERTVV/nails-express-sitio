@@ -29,6 +29,7 @@ css/estilos.css   Todos los estilos, con las variables de marca arriba
 js/datos.js       Datos del sistema: tonos, diseños, servicios, empleadas,
                   usuarios y citas de ejemplo
 js/sesion.js      Modal de acceso, sesión y menú del usuario en la barra
+js/agenda-citas.js  Validación compartida de duración, especialidades y capacidad
 js/inicio.js      Comportamiento de la portada
 js/agendar.js     Lógica del agendado
 js/panel.js       Partes comunes de los paneles (sesión, permisos por rol)
@@ -68,7 +69,12 @@ mismo nombre que aparecen en el diagrama de clases.
 - Catálogo con filtro por familia de color y ventana de detalle por tono.
 - Cotizador que recalcula total y duración al cambiar la selección.
 - Agendado en tres pasos, con validación de nombre y teléfono.
-- Horarios ocupados bloqueados según la empleada elegida.
+- Horarios calculados según duración del servicio y diseño, apertura, cierre,
+  especialidad y bloques cerrados, tanto al agendar como al reprogramar.
+- Sin preferencia comprueba capacidad para atender cada servicio completo;
+  la cita sigue sin asignar hasta que se decide en el salón.
+- La disponibilidad se revisa otra vez antes de guardar y se actualiza al
+  volver a la pestaña o cambiar las reservas desde otra pestaña.
 - Las selecciones viajan entre páginas por la URL
   (por ejemplo `agendar.html?servicio=1&diseno=2`).
 - Adaptado a celular y navegable con teclado.
@@ -84,6 +90,19 @@ mismo nombre que aparecen en el diagrama de clases.
 - Panel de la administradora (una sola cuenta, para ambas sucursales):
   agenda general, ingresos y comisiones, catálogo y precios, y empleadas.
 - El personal no agenda citas ni ve las opciones de la clienta.
+
+## Pruebas automáticas
+
+Con Node.js 20 o posterior, desde la carpeta `nails-express-sitio`, ejecuta:
+
+```sh
+node --test tests/agenda.test.cjs
+```
+
+Cubren empalmes, cierre, especialidades, capacidad sin asignación, reprogramación,
+limpieza de horarios y fallos de almacenamiento. Usan datos en memoria y no
+modifican las reservas del navegador. Las pruebas de interfaz usan un DOM
+simulado; la revisión visual en navegador se realiza por separado.
 
 ## Cuentas de prueba
 

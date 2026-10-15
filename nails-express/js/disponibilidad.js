@@ -70,10 +70,8 @@ function pintarDisponibilidad() {
   document.getElementById("semana-siguiente").disabled =
     inicioSemana >= sumarDias(semanaActual, 7 * SEMANAS_ADELANTE);
 
-  // Bloques ya reservados por clientas: "fecha|hora"
-  const reservados = new Set(Sesion.citas()
-    .filter(c => c.empleadaId === empleada.id && c.estado !== "cancelada")
-    .map(c => c.fecha + "|" + c.hora));
+  // Todos los bloques que atraviesa una cita, no solo su hora inicial.
+  const reservados = Sesion.bloquesReservados(empleada.id);
 
   document.getElementById("rejilla-dias").innerHTML = `
     <tr>

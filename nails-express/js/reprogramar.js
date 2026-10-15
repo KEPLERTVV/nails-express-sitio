@@ -39,7 +39,7 @@ const Reprogramar = (function () {
             <p class="pasos__texto" id="reprogramar-ayuda">Los horarios apagados ya están ocupados.</p>
           </fieldset>
 
-          <div class="aviso" role="status"></div>
+          <div class="aviso" role="status" tabindex="-1"></div>
           <button class="boton boton--principal acceso__enviar" type="submit">Confirmar cambio</button>
         </form>
       </div>
@@ -74,8 +74,9 @@ const Reprogramar = (function () {
 
     pintar();
     ventana.showModal();
-    // el foco va a la primera decisión: con quién
-    ventana.querySelector('#reprogramar-empleadas [aria-pressed="true"]').focus();
+    // Si ya no hay especialistas, el foco pasa a la fecha.
+    const primeraDecision = ventana.querySelector('#reprogramar-empleadas [aria-pressed="true"]') || campoFecha;
+    primeraDecision.focus();
   }
 
   /* --- Dibujo ------------------------------------------------ */
@@ -84,14 +85,19 @@ const Reprogramar = (function () {
 
     // Solo ofrecer empleadas activas que realizan el servicio de la cita.
     const especialistas = Sesion.empleadasPara(cita.servicioId, cita.sucursalId);
-    const opciones = especialistas.concat(SIN_PREFERENCIA);
-    if (!opciones.some(e => e.id === moviendo.empleadaId)) moviendo.empleadaId = 0;
+    const opciones = especialistas.length ? especialistas.concat(SIN_PREFERENCIA) : [];
+    if (!opciones.some(e => e.id === moviendo.empleadaId)) {
+      moviendo.empleadaId = 0;
+      moviendo.hora = "";
+    }
 
-    document.getElementById("reprogramar-empleadas").innerHTML = opciones.map(e => `
-      <button class="opcion" type="button" data-empleada="${e.id}" aria-pressed="${e.id === moviendo.empleadaId}">
-        <strong>${escaparHTML(e.nombre)}</strong>
-        <span>${e.especialidades.length ? escaparHTML(e.especialidades.join(" · ")) : "La primera que se desocupe"}</span>
-      </button>`).join("");
+    document.getElementById("reprogramar-empleadas").innerHTML = especialistas.length
+      ? opciones.map(e => `
+          <button class="opcion" type="button" data-empleada="${e.id}" aria-pressed="${e.id === moviendo.empleadaId}">
+            <strong>${escaparHTML(e.nombre)}</strong>
+            <span>${e.especialidades.length ? escaparHTML(e.especialidades.join(" · ")) : "La asignamos al llegar al salón"}</span>
+          </button>`).join("")
+      : `<p class="pasos__texto">No hay especialistas de ${escaparHTML(SERVICIOS.find(s => s.id === cita.servicioId)?.nombre || "este servicio")} en esta sucursal.</p>`;
 
     // Horas libres ese día para esa empleada (sin contar esta misma cita)
     const ocupadas = moviendo.fecha
@@ -105,19 +111,19 @@ const Reprogramar = (function () {
           ignorarFolio: cita.folio
         })
       : new Set(HORARIOS);
-    if (moviendo.hora && ocupadas.has(moviendo.hora)) moviendo.hora = "";
+    if (moviendo.hora && (!HORARIOS.includes(moviendo.hora) || ocupadas.has(moviendo.hora))) moviendo.hora = "";
 
     document.getElementById("reprogramar-horas").innerHTML = HORARIOS.map(h => `
       <button class="hora" type="button" data-hora="${h}" aria-pressed="${moviendo.hora === h}"
               ${ocupadas.has(h) ? "disabled" : ""}>${h}</button>`).join("");
 
     document.getElementById("reprogramar-ayuda").textContent = !especialistas.length
-      ? "No hay empleadas que realicen este servicio en esta sucursal. Contacta a la sucursal para cambiar tu cita."
+      ? "No se puede reprogramar esta cita en esta sucursal. Contacta al salón para encontrar una alternativa."
       : !moviendo.fecha
-      ? "Elige primero el día."
-      : ocupadas.size === HORARIOS.length
-        ? "No hay horarios válidos para el servicio completo ese día. Prueba otra fecha o empleada."
-        : "Los horarios consideran duración, reservas y disponibilidad de la empleada.";
+        ? "Elige primero el día."
+        : ocupadas.size === HORARIOS.length
+          ? "No hay horarios válidos para la duración completa ese día. Prueba otra fecha o empleada."
+          : "Los horarios consideran duración, cierre, reservas y disponibilidad de la empleada.";
   }
 
   /* --- Eventos ----------------------------------------------- */
@@ -149,7 +155,9 @@ const Reprogramar = (function () {
 
     // Validación: sin alert(), el mensaje va en la ventana
     let error = "";
-    if (!fecha || fecha < campoFecha.min || fecha > campoFecha.max) {
+    if (!Sesion.empleadasPara(cita.servicioId, cita.sucursalId).length) {
+      error = "No hay especialistas disponibles para este servicio en esta sucursal. Contacta al salón para reprogramar.";
+    } else if (!fecha || fecha < campoFecha.min || fecha > campoFecha.max) {
       error = `Elige un día entre hoy y los próximos ${DIAS_PARA_REPROGRAMAR} días.`;
     } else if (!hora) {
       error = "Elige uno de los horarios disponibles.";
@@ -184,6 +192,17 @@ const Reprogramar = (function () {
     if (clicEmpezoEnFondo && e.target === ventana) ventana.close();
   });
   ventana.addEventListener("close", () => { moviendo = null; alGuardar = null; });
+
+  function actualizarDisponibilidad() {
+    if (!moviendo) return;
+    const horaAnterior = moviendo.hora;
+    pintar();
+    if (horaAnterior && !moviendo.hora) {
+      aviso.textContent = "El horario elegido dejó de estar disponible. Elige una nueva hora antes de confirmar.";
+    }
+  }
+  document.addEventListener("agenda:cambio", actualizarDisponibilidad);
+  window.addEventListener("focus", actualizarDisponibilidad);
 
   return { abrir };
 })();

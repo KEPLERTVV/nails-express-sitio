@@ -81,7 +81,8 @@ function pintarPaso() {
 
   if (paso === 2) {
     // Las especialidades se respetan también al volver desde otro paso.
-    const disponibles = empleadasDe(cita.sucursal.id).concat(SIN_PREFERENCIA);
+    const especialistas = empleadasDe(cita.sucursal.id);
+    const disponibles = especialistas.length ? especialistas.concat(SIN_PREFERENCIA) : [];
     if (!disponibles.some(e => e.id === cita.empleada.id)) {
       cita.empleada = SIN_PREFERENCIA;
       cita.hora = "";
@@ -89,10 +90,15 @@ function pintarPaso() {
       cita.empleada = disponibles.find(e => e.id === cita.empleada.id);
     }
 
-    tarjetas("op-empleadas", disponibles,
-      e => e.id === cita.empleada.id,
-      e => `<strong>${escapar(e.nombre)}</strong><span>${e.especialidades.length ? escapar(e.especialidades.join(" · ")) : "La asignamos al llegar al salón"}</span>`,
-      e => { cita.empleada = e; cita.hora = ""; avisarAgenda(""); });
+    if (especialistas.length) {
+      tarjetas("op-empleadas", disponibles,
+        e => e.id === cita.empleada.id,
+        e => `<strong>${escapar(e.nombre)}</strong><span>${e.especialidades.length ? escapar(e.especialidades.join(" · ")) : "La asignamos al llegar al salón"}</span>`,
+        e => { cita.empleada = e; cita.hora = ""; avisarAgenda(""); });
+    } else {
+      document.getElementById("op-empleadas").innerHTML =
+        `<p class="pasos__texto">No hay especialistas de ${escapar(cita.servicio.nombre)} en ${escapar(cita.sucursal.nombre)}.</p>`;
+    }
 
     pintarHoras();
   }
@@ -132,10 +138,11 @@ function pintarHoras() {
   // si la hora elegida dejó de estar libre (cambió fecha o empleada), se suelta
   if (cita.hora && (!HORARIOS.includes(cita.hora) || ocupados.has(cita.hora))) cita.hora = "";
 
-  document.getElementById("agendar-ayuda").textContent = !cita.fecha
-    ? "Elige primero el día para consultar los horarios."
-    : !empleadasDe(cita.sucursal.id).length
-      ? "No hay empleadas que realicen este servicio en esta sucursal. Elige otra sucursal o servicio."
+  const hayEspecialistas = empleadasDe(cita.sucursal.id).length > 0;
+  document.getElementById("agendar-ayuda").textContent = !hayEspecialistas
+    ? "No hay empleadas que realicen este servicio en esta sucursal. Elige otra sucursal o servicio."
+    : !cita.fecha
+      ? "Elige primero el día para consultar los horarios."
       : ocupados.size === HORARIOS.length
         ? "No hay horarios para el servicio completo con esta opción. Prueba otro día, empleada o sucursal."
         : "Los horarios disponibles consideran la duración completa, las reservas y los bloques cerrados.";
@@ -165,7 +172,8 @@ function pintarResumen() {
     ["Duración",  calcularDuracion(cita.servicio, cita.diseno) + " min"]
   ];
   if (paso >= 2) {
-    lineas.push(["Con", cita.empleada.nombre]);
+    const hayEspecialistas = empleadasDe(cita.sucursal.id).length > 0;
+    lineas.push(["Con", hayEspecialistas ? cita.empleada.nombre : "Sin especialista disponible"]);
     lineas.push(["Cuándo", (cita.fecha || "—") + (cita.hora ? " · " + cita.hora : "")]);
   }
 

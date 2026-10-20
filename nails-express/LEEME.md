@@ -136,6 +136,6 @@ Para volver a los datos originales, ejecuta `localStorage.clear()` en la consola
 ## Pendientes rápidos
 
 - Las fotos del encabezado y de los diseños todavía no existen; cuando las
-  tengan, van en `img/` y se referencian desde el HTML.
+  tengamos, van en `img/` y se referencian desde el HTML.
 - Verificar con el salón los precios, duraciones y la lista real de tonos
   en `js/datos.js`.

@@ -1082,6 +1082,12 @@ button.bloque--cerrado:hover { border-color: var(--texto-suave); background: #EE
 .disponibilidad__guardar { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
 .disponibilidad__estado { color: var(--magenta-fuerte); font-size: .88rem; font-weight: 500; }
 .disponibilidad__estado--exito { color: #1D6B4A; }
+.disponibilidad__dia { display: block; margin: .4rem auto 0; padding: .3rem .55rem !important; font-size: .72rem !important; }
+.bloque--solicitud-pendiente { border: 1px dashed #D6B66C; background: #FBF0DC; color: #7A5310; }
+.bloque--cerrado:not(button) { border: 1px solid var(--borde); background: #F4F0F2; color: #6B5266; }
+.solicitud-disponibilidad { grid-template-columns: minmax(0, 1fr) auto auto; }
+.solicitud-disponibilidad .agenda__quien { grid-column: auto; }
+.solicitud-disponibilidad .agenda__acciones { grid-column: auto; }
 
 /* --- Panel del personal: pantallas chicas ------------------- */
 @media (max-width: 900px) {
@@ -1122,6 +1128,9 @@ button.bloque--cerrado:hover { border-color: var(--texto-suave); background: #EE
   .agenda__quien { grid-column: 2 / 4; }
   .agenda__bloque--libre .agenda__hora,
   .agenda__bloque--cerrado .agenda__hora { grid-row: auto; align-self: center; }
+  .solicitud-disponibilidad { grid-template-columns: minmax(0, 1fr) auto; }
+  .solicitud-disponibilidad .agenda__quien { grid-column: 1 / -1; }
+  .solicitud-disponibilidad .agenda__acciones { grid-column: 1 / -1; }
 }
 
 /* --- Control de citas por la empleada ----------------------- */

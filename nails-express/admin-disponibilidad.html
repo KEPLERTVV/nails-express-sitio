@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Solicitudes de disponibilidad — Nails Express</title>
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body class="personal">
+
+  <aside class="personal__lateral">
+    <a class="personal__logo" href="index.html">
+      <img src="img/logo sin fondo.svg" alt="Nails Express — ir al sitio público">
+    </a>
+    <nav class="personal__nav" aria-label="Panel de administradora">
+      <a href="panel-admin.html">Agenda general</a>
+      <a href="admin-disponibilidad.html" aria-current="page">Solicitudes de disponibilidad</a>
+      <a href="admin-ingresos.html">Ingresos y comisiones</a>
+      <a href="admin-catalogo.html">Catálogo y precios</a>
+      <a href="admin-empleadas.html">Empleadas</a>
+    </nav>
+  </aside>
+
+  <div class="personal__principal">
+    <header class="personal__superior">
+      <a class="barra__sesion" href="#">Iniciar sesión</a>
+    </header>
+
+    <main class="personal__contenido">
+      <div id="cuenta-panel">
+        <h1 class="personal__titulo">Solicitudes de disponibilidad</h1>
+        <p class="cuenta__intro">Revisa los días y horarios que las empleadas necesitan cerrar. Al aceptar, esos bloques dejarán de ofrecerse al agendar.</p>
+        <div class="aviso" id="solicitudes-aviso" role="status" tabindex="-1"></div>
+
+        <h2 class="personal__subtitulo">Pendientes de revisión</h2>
+        <ol class="agenda" id="solicitudes-pendientes" aria-live="polite"></ol>
+
+        <h2 class="personal__subtitulo">Historial</h2>
+        <ol class="agenda" id="solicitudes-historial" aria-live="polite"></ol>
+      </div>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-sesion">
+        <h1>Inicia sesión para ver las solicitudes</h1>
+        <p>Esta sección es para la administración de Nails Express.</p>
+        <div class="cuenta__vacio-acciones">
+          <button class="boton boton--principal" type="button" id="cuenta-entrar">Iniciar sesión</button>
+          <a class="boton boton--secundario" href="index.html">Ir al sitio</a>
+        </div>
+      </section>
+
+      <section class="cuenta__vacio oculto" id="cuenta-sin-permiso">
+        <h1>Esta sección es solo para la administradora</h1>
+        <p>Tu cuenta no tiene acceso a las solicitudes de disponibilidad.</p>
+        <div class="cuenta__vacio-acciones">
+          <a class="boton boton--principal" href="index.html" data-panel-propio>Ir a mi panel</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/datos.js"></script>
+  <script src="js/agenda-citas.js"></script>
+  <script src="js/sesion.js"></script>
+  <script src="js/panel.js"></script>
+  <script src="js/admin-disponibilidad.js"></script>
+</body>
+</html>

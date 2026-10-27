@@ -12,6 +12,7 @@
   const CLAVE_CUENTAS = "nailsExpress.cuentas";   // cuentas creadas o editadas desde el sitio
   const CLAVE_CITAS   = "nailsExpress.citas";     // citas agendadas o modificadas desde el sitio
   const CLAVE_DISPONIBILIDAD = "nailsExpress.disponibilidad";  // bloques cerrados por empleada
+  const CLAVE_SOLICITUDES_DISPONIBILIDAD = "nailsExpress.solicitudesDisponibilidad";
   const CLAVE_CATALOGO = "nailsExpress.catalogo";  // precios, duraciones y tonos editados por la administradora
   const CLAVE_VERSION = "nailsExpress.version";   // versión del formato de lo guardado
   const VERSION_DATOS = 2;
@@ -35,6 +36,7 @@
     ],
     administradora: [
       { texto: "Agenda general", href: "panel-admin.html" },
+      { texto: "Solicitudes de disponibilidad", href: "admin-disponibilidad.html" },
       { texto: "Ingresos",       href: "admin-ingresos.html" },
       { texto: "Catálogo",       href: "admin-catalogo.html" },
       { texto: "Empleadas",      href: "admin-empleadas.html" }
@@ -146,8 +148,36 @@
     return {
       citas: todasLasCitas(), empleadas: empleadasActivas(),
       servicios: SERVICIOS, disenos: DISENOS, sucursales: SUCURSALES,
-      horarios: HORARIOS, cerrados: leer(CLAVE_DISPONIBILIDAD, {})
+      horarios: HORARIOS, cerrados: disponibilidadCompleta()
     };
+  }
+
+  function disponibilidadCompleta() {
+    const guardada = leer(CLAVE_DISPONIBILIDAD, {}) || {};
+    const completa = {};
+    Object.keys(guardada).forEach(id => {
+      completa[id] = Object.fromEntries(Object.entries(guardada[id] || {})
+        .map(([fecha, horas]) => [fecha, Array.isArray(horas) ? horas.slice() : []]));
+    });
+    solicitudesDisponibilidad()
+      .filter(s => s.estado === "aceptada")
+      .forEach(s => {
+        if (!Array.isArray(s.horas)) return;
+        completa[s.empleadaId] = completa[s.empleadaId] || {};
+        completa[s.empleadaId][s.fecha] = Array.from(new Set([
+          ...(completa[s.empleadaId][s.fecha] || []), ...s.horas
+        ]));
+      });
+    return completa;
+  }
+
+  function solicitudesDisponibilidad() {
+    const solicitudes = leer(CLAVE_SOLICITUDES_DISPONIBILIDAD, []);
+    return Array.isArray(solicitudes) ? solicitudes : [];
+  }
+
+  function notificarCambioAgenda() {
+    document.dispatchEvent(new CustomEvent("agenda:cambio"));
   }
 
   /* --- Catálogo editado por la administradora ------------------ */
@@ -607,7 +637,8 @@
   // Si la sesión cambia en otra pestaña del navegador, se refleja aquí
   window.addEventListener("storage", e => {
     if (e.key === CLAVE_SESION) pintarBarra();
-    if (e.key === null || [CLAVE_CITAS, CLAVE_CUENTAS, CLAVE_DISPONIBILIDAD, CLAVE_CATALOGO].includes(e.key)) {
+    if (e.key === null || [CLAVE_CITAS, CLAVE_CUENTAS, CLAVE_DISPONIBILIDAD,
+      CLAVE_SOLICITUDES_DISPONIBILIDAD, CLAVE_CATALOGO].includes(e.key)) {
       if (e.key === null || e.key === CLAVE_CATALOGO) aplicarCatalogo();
       document.dispatchEvent(new CustomEvent("agenda:cambio"));
     }
@@ -758,17 +789,143 @@
     // Disponibilidad: por empleada, las horas CERRADAS de cada fecha.
     // Lo que no aparece está disponible. Forma: { "AAAA-MM-DD": ["18:30"] }
     disponibilidadDe(idEmpleada) {
-      return leer(CLAVE_DISPONIBILIDAD, {})[idEmpleada] || {};
-    },
-
-    guardarDisponibilidad(idEmpleada, cerrados) {
-      const todas = leer(CLAVE_DISPONIBILIDAD, {});
-      todas[idEmpleada] = cerrados;
-      guardar(CLAVE_DISPONIBILIDAD, todas);
+      return disponibilidadCompleta()[idEmpleada] || {};
     },
 
     cerradosDe(idEmpleada, fecha) {
       return this.disponibilidadDe(idEmpleada)[fecha] || [];
+    },
+
+    solicitudesDisponibilidad(idEmpleada) {
+      const solicitudes = solicitudesDisponibilidad();
+      return idEmpleada == null
+        ? solicitudes
+        : solicitudes.filter(s => s.empleadaId === idEmpleada);
+    },
+
+    solicitarCierreDisponibilidad(idEmpleada, cierres) {
+      const sesion = sesionActual();
+      const empleada = this.buscarEmpleada(idEmpleada);
+      if (!sesion || sesion.rol !== "empleada" || sesion.id !== idEmpleada ||
+          !empleada || !empleada.activa) {
+        return { guardada: false, mensaje: "No pudimos comprobar tu cuenta de empleada." };
+      }
+      if (!Array.isArray(cierres) || !cierres.length) {
+        return { guardada: false, mensaje: "Selecciona al menos un horario para solicitar el cierre." };
+      }
+
+      const ahora = new Date();
+      const reservados = this.bloquesReservados(idEmpleada);
+      const actuales = this.disponibilidadDe(idEmpleada);
+      const pendientes = solicitudesDisponibilidad()
+        .filter(s => s.empleadaId === idEmpleada && s.estado === "pendiente");
+      const solicitados = [];
+      const fechas = new Set();
+      for (const cierre of cierres) {
+        if (!cierre || typeof cierre.fecha !== "string") {
+          return { guardada: false, mensaje: "La fecha o los horarios seleccionados no son válidos." };
+        }
+        const dia = new Date(cierre.fecha + "T00:00:00");
+        const fechaValida = /^\d{4}-\d{2}-\d{2}$/.test(cierre.fecha) &&
+          Number.isFinite(dia.getTime()) &&
+          `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, "0")}-${String(dia.getDate()).padStart(2, "0")}` === cierre.fecha;
+        if (!fechaValida || !Array.isArray(cierre.horas) || !cierre.horas.length ||
+            fechas.has(cierre.fecha)) {
+          return { guardada: false, mensaje: "La fecha o los horarios seleccionados no son válidos." };
+        }
+        fechas.add(cierre.fecha);
+        const horas = Array.from(new Set(cierre.horas));
+        if (horas.some(hora => !HORARIOS.includes(hora) ||
+            new Date(cierre.fecha + "T" + hora) <= ahora ||
+            reservados.has(cierre.fecha + "|" + hora) ||
+            (actuales[cierre.fecha] || []).includes(hora) ||
+            pendientes.some(s => s.fecha === cierre.fecha && s.horas.includes(hora)))) {
+          return { guardada: false,
+            mensaje: "Algún horario ya pasó, tiene una cita, está cerrado o tiene una solicitud pendiente. Actualiza la disponibilidad e inténtalo de nuevo." };
+        }
+        solicitados.push({ fecha: cierre.fecha, horas });
+      }
+
+      const existentes = solicitudesDisponibilidad();
+      const nuevos = solicitados.map(cierre => {
+        const azar = new Uint32Array(2);
+        crypto.getRandomValues(azar);
+        return {
+          id: `${Date.now()}-${azar[0]}-${azar[1]}`,
+          empleadaId: idEmpleada,
+          fecha: cierre.fecha,
+          horas: cierre.horas,
+          estado: "pendiente",
+          creadaEn: new Date().toISOString()
+        };
+      });
+      if (!guardar(CLAVE_SOLICITUDES_DISPONIBILIDAD, existentes.concat(nuevos))) {
+        return { guardada: false,
+          mensaje: "No pudimos guardar la solicitud en este navegador. Revisa el almacenamiento e inténtalo de nuevo." };
+      }
+      notificarCambioAgenda();
+      return { guardada: true, mensaje: "Enviamos tu solicitud a la administradora." };
+    },
+
+    resolverSolicitudDisponibilidad(idSolicitud, decision) {
+      const sesion = sesionActual();
+      if (!sesion || sesion.rol !== "administradora") {
+        return { resuelta: false, mensaje: "Solo la administradora puede resolver solicitudes." };
+      }
+      if (!["aceptada", "rechazada"].includes(decision)) {
+        return { resuelta: false, mensaje: "La decisión seleccionada no es válida." };
+      }
+      const solicitudes = solicitudesDisponibilidad();
+      const solicitud = solicitudes.find(s => s.id === idSolicitud);
+      if (!solicitud || solicitud.estado !== "pendiente") {
+        return { resuelta: false, mensaje: "La solicitud ya fue atendida o no existe." };
+      }
+
+      if (decision === "aceptada") {
+        const empleada = this.buscarEmpleada(solicitud.empleadaId);
+        if (!empleada || !empleada.activa) {
+          return { resuelta: false, mensaje: "La empleada ya no está activa; rechaza esta solicitud." };
+        }
+        const ahora = new Date();
+        const reservados = this.bloquesReservados(solicitud.empleadaId);
+        const cerrados = this.disponibilidadDe(solicitud.empleadaId)[solicitud.fecha] || [];
+        if (solicitud.horas.some(hora => new Date(solicitud.fecha + "T" + hora) <= ahora)) {
+          return { resuelta: false, mensaje: "La fecha de esta solicitud ya pasó." };
+        }
+        if (solicitud.horas.some(hora => reservados.has(solicitud.fecha + "|" + hora))) {
+          return { resuelta: false,
+            mensaje: "No se puede aceptar: uno o más horarios ya tienen citas reservadas." };
+        }
+        if (solicitud.horas.some(hora => cerrados.includes(hora))) {
+          return { resuelta: false,
+            mensaje: "No se puede aceptar: uno o más horarios ya están cerrados por otra solicitud." };
+        }
+
+        const contexto = contextoAgenda();
+        contexto.cerrados[solicitud.empleadaId] = contexto.cerrados[solicitud.empleadaId] || {};
+        contexto.cerrados[solicitud.empleadaId][solicitud.fecha] = [
+          ...cerrados, ...solicitud.horas
+        ];
+        const sinAsignar = contexto.citas.filter(c => c.fecha === solicitud.fecha &&
+          c.sucursalId === empleada.sucursal && c.empleadaId === 0 && c.estado !== "cancelada");
+        if (sinAsignar.some(c => !AgendaCitas.validar({
+          ...contexto, cita: c, ignorarFolio: c.folio
+        }).valida)) {
+          return { resuelta: false,
+            mensaje: "No se puede aceptar: el cierre dejaría una cita sin preferencia sin capacidad para atenderse." };
+        }
+      }
+
+      const actualizadas = solicitudes.map(s => s.id === idSolicitud
+        ? { ...s, estado: decision, resueltaEn: new Date().toISOString(), resueltaPor: sesion.id }
+        : s);
+      if (!guardar(CLAVE_SOLICITUDES_DISPONIBILIDAD, actualizadas)) {
+        return { resuelta: false,
+          mensaje: "No pudimos guardar la decisión en este navegador. Revisa el almacenamiento e inténtalo de nuevo." };
+      }
+      notificarCambioAgenda();
+      return { resuelta: true,
+        mensaje: decision === "aceptada" ? "Aceptamos la solicitud y cerramos esos horarios." : "Rechazamos la solicitud." };
     },
 
     /* Incluye servicio, duración completa y reservas sin asignar.

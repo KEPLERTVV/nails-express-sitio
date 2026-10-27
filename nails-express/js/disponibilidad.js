@@ -1,22 +1,19 @@
 /* ============================================================
-   disponibilidad.js — La empleada abre o cierra sus bloques
-   Equivale a Empleada.registrarDisponibilidad() del diagrama.
-   Los cambios se acumulan en un borrador y solo se guardan con
-   "Guardar cambios"; así se puede revisar varias semanas antes.
+   disponibilidad.js — Solicitudes de cierre de disponibilidad
+   La empleada selecciona horarios y la administradora decide.
    ============================================================ */
 
-const SEMANAS_ADELANTE = 8;   // hasta cuántas semanas se puede planear
+const SEMANAS_ADELANTE = 8;
 
 let inicioSemana = lunesDe(new Date());
-let borrador     = null;      // { "AAAA-MM-DD": ["horas cerradas"] }
-let borradorDe   = null;      // id de la empleada dueña del borrador
-let hayCambios   = false;
+let seleccionCierres = {};
+let seleccionDe = null;
+let hayCambios = false;
 
-/* --- Fechas -------------------------------------------------- */
 function lunesDe(fecha) {
   const d = new Date(fecha);
   d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - (d.getDay() + 6) % 7);   // domingo = 0 → retrocede 6
+  d.setDate(d.getDate() - (d.getDay() + 6) % 7);
   return d;
 }
 
@@ -30,33 +27,41 @@ function diaYMes(fecha) {
   return fecha.toLocaleDateString("es-MX", { day: "numeric", month: "long" });
 }
 
-// "Lun 29" para el encabezado de la tabla
 function diaCorto(fecha) {
   const nombre = fecha.toLocaleDateString("es-MX", { weekday: "short" }).replace(".", "");
   return nombre.charAt(0).toUpperCase() + nombre.slice(1) + " " + fecha.getDate();
 }
 
-/* --- Dibujo -------------------------------------------------- */
+function solicitudesDe(empleadaId) {
+  return Sesion.solicitudesDisponibilidad(empleadaId);
+}
+
+function puedeSolicitar(fecha, hora, reservados, cerrados, pendientes, ahora) {
+  return new Date(fecha + "T" + hora) > ahora &&
+    !reservados.has(fecha + "|" + hora) &&
+    !cerrados.includes(hora) &&
+    !pendientes.some(s => s.fecha === fecha && s.horas.includes(hora));
+}
+
 function pintarDisponibilidad() {
   const empleada = empleadaActual();
-  const guardar  = document.getElementById("disponibilidad-guardar");
+  const enviar = document.getElementById("disponibilidad-enviar");
 
   if (!empleada) {
     document.getElementById("semana-rango").textContent =
       "No encontramos tus datos de empleada. Pide a la administradora que revise tu cuenta.";
     document.getElementById("rejilla-dias").innerHTML = "";
     document.getElementById("rejilla-bloques").innerHTML = "";
-    guardar.disabled = true;
-    document.getElementById("semana-anterior").disabled  = true;
+    document.getElementById("solicitudes-lista").innerHTML = "";
+    enviar.disabled = true;
+    document.getElementById("semana-anterior").disabled = true;
     document.getElementById("semana-siguiente").disabled = true;
     return;
   }
-  guardar.disabled = false;
 
-  // Si cambió la persona con sesión, se empieza de nuevo desde lo guardado
-  if (borradorDe !== empleada.id) {
-    borrador   = JSON.parse(JSON.stringify(Sesion.disponibilidadDe(empleada.id)));
-    borradorDe = empleada.id;
+  if (seleccionDe !== empleada.id) {
+    seleccionCierres = {};
+    seleccionDe = empleada.id;
     marcarCambios(false);
   }
 
@@ -64,87 +69,154 @@ function pintarDisponibilidad() {
   document.getElementById("semana-rango").textContent =
     `Semana del ${diaYMes(dias[0])} al ${diaYMes(dias[6])}`;
 
-  // No se planean semanas pasadas ni demasiado lejanas
   const semanaActual = lunesDe(new Date());
-  document.getElementById("semana-anterior").disabled  = inicioSemana <= semanaActual;
+  document.getElementById("semana-anterior").disabled = inicioSemana <= semanaActual;
   document.getElementById("semana-siguiente").disabled =
     inicioSemana >= sumarDias(semanaActual, 7 * SEMANAS_ADELANTE);
 
-  // Todos los bloques que atraviesa una cita, no solo su hora inicial.
   const reservados = Sesion.bloquesReservados(empleada.id);
+  const solicitudes = solicitudesDe(empleada.id);
+  const pendientes = solicitudes.filter(s => s.estado === "pendiente");
+  const ahora = new Date();
 
   document.getElementById("rejilla-dias").innerHTML = `
     <tr>
       <th scope="col"><span class="solo-lector">Horario</span></th>
-      ${dias.map(d => `<th scope="col">${diaCorto(d)}</th>`).join("")}
+      ${dias.map(d => {
+        const fecha = fechaISO(d);
+        const diaPasado = d < semanaActual;
+        return `<th scope="col">
+          <span>${diaCorto(d)}</span>
+          <button class="boton boton--secundario disponibilidad__dia" type="button"
+                  data-dia="${fecha}" ${diaPasado ? "disabled" : ""}>Todo el día</button>
+        </th>`;
+      }).join("")}
     </tr>`;
 
-  const ahora = new Date();
   document.getElementById("rejilla-bloques").innerHTML = HORARIOS.map(hora => `
     <tr>
       <th scope="row">${hora}</th>
       ${dias.map(dia => {
         const fecha = fechaISO(dia);
-        return `<td>${celda(fecha, hora, dia, reservados, ahora)}</td>`;
+        const cerrados = Sesion.cerradosDe(empleada.id, fecha);
+        return `<td>${celda(fecha, hora, dia, reservados, cerrados, pendientes, ahora)}</td>`;
       }).join("")}
     </tr>`).join("");
+
+  pintarSolicitudes(solicitudes);
+  actualizarBotonEnviar();
 }
 
-function celda(fecha, hora, dia, reservados, ahora) {
+function celda(fecha, hora, dia, reservados, cerrados, pendientes, ahora) {
   if (reservados.has(fecha + "|" + hora)) {
     return `<span class="bloque bloque--reservado">Reservado</span>`;
   }
-
-  const abierto = !(borrador[fecha] || []).includes(hora);
-  const texto   = abierto ? "Disponible" : "Cerrado";
-
-  // Lo que ya pasó se muestra, pero no se puede cambiar
-  if (new Date(fecha + "T" + hora) <= ahora) {
-    return `<span class="bloque bloque--pasado">${texto}</span>`;
+  if (cerrados.includes(hora)) {
+    return `<span class="bloque bloque--cerrado">Cierre aprobado</span>`;
+  }
+  if (pendientes.some(s => s.fecha === fecha && s.horas.includes(hora))) {
+    return `<span class="bloque bloque--solicitud-pendiente">En revisión</span>`;
   }
 
-  // El texto oculto da contexto al lector de pantalla: "lunes 29 de septiembre a las 11:00"
-  const contexto = dia.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+  const seleccionado = (seleccionCierres[fecha] || []).includes(hora);
+  if (new Date(fecha + "T" + hora) <= ahora) {
+    return `<span class="bloque bloque--pasado">Pasado</span>`;
+  }
+
+  const contexto = dia.toLocaleDateString("es-MX", {
+    weekday: "long", day: "numeric", month: "long"
+  });
   return `
-    <button class="bloque ${abierto ? "" : "bloque--cerrado"}" type="button"
-            data-fecha="${fecha}" data-hora="${hora}" aria-pressed="${abierto}">
-      <span class="solo-lector">${contexto} a las ${hora}: </span><span class="bloque__texto">${texto}</span>
+    <button class="bloque ${seleccionado ? "bloque--cerrado" : ""}" type="button"
+            data-fecha="${fecha}" data-hora="${hora}" aria-pressed="${seleccionado}">
+      <span class="solo-lector">${contexto} a las ${hora}: </span>
+      <span class="bloque__texto">${seleccionado ? "Solicitar cierre" : "Disponible"}</span>
     </button>`;
 }
 
-/* --- Cambios ------------------------------------------------- */
+function pintarSolicitudes(solicitudes) {
+  const recientes = solicitudes.slice().sort((a, b) => b.creadaEn.localeCompare(a.creadaEn));
+  document.getElementById("solicitudes-lista").innerHTML = recientes.length
+    ? recientes.map(s => {
+      const estado = s.estado === "pendiente" ? "Pendiente de revisión" :
+        s.estado === "aceptada" ? "Aceptada" : "Rechazada";
+      const clase = s.estado === "pendiente" ? "pendiente" :
+        s.estado === "aceptada" ? "confirmada" : "cancelada";
+      return `<li class="agenda__bloque solicitud-disponibilidad">
+        <div class="agenda__quien">
+          <strong>${fechaLarga(s.fecha)}</strong>
+          <span>${s.horas.join(" · ")}</span>
+        </div>
+        <span class="estado estado--${clase}">${estado}</span>
+      </li>`;
+    }).join("")
+    : `<li class="citas__vacio"><p>Aún no has enviado solicitudes de cierre.</p></li>`;
+}
+
 function marcarCambios(pendientes, mensaje) {
   hayCambios = pendientes;
   const estado = document.getElementById("disponibilidad-estado");
-  estado.textContent = mensaje || (pendientes ? "Tienes cambios sin guardar." : "");
+  estado.textContent = mensaje || (pendientes ? "Seleccionaste horarios para solicitar su cierre." : "");
   estado.classList.toggle("disponibilidad__estado--exito", !pendientes && Boolean(mensaje));
+  actualizarBotonEnviar();
 }
 
-// Abrir o cerrar un bloque. Solo se actualiza ese botón para no
-// perder el foco del teclado.
+function actualizarBotonEnviar() {
+  const boton = document.getElementById("disponibilidad-enviar");
+  if (boton) {
+    boton.disabled = !Object.values(seleccionCierres).some(horas => horas.length);
+  }
+}
+
+function seleccionarTodoElDia(fecha) {
+  const empleada = empleadaActual();
+  if (!empleada) return;
+  const reservados = Sesion.bloquesReservados(empleada.id);
+  const cerrados = Sesion.cerradosDe(empleada.id, fecha);
+  const pendientes = solicitudesDe(empleada.id).filter(s => s.estado === "pendiente");
+  const ahora = new Date();
+  const seleccionables = HORARIOS.filter(hora =>
+    puedeSolicitar(fecha, hora, reservados, cerrados, pendientes, ahora));
+  const seleccionActual = new Set(seleccionCierres[fecha] || []);
+  seleccionables.forEach(hora => seleccionActual.add(hora));
+  if (seleccionActual.size) seleccionCierres[fecha] = Array.from(seleccionActual);
+  else delete seleccionCierres[fecha];
+  marcarCambios(Object.values(seleccionCierres).some(horas => horas.length));
+  pintarDisponibilidad();
+}
+
 document.getElementById("rejilla-bloques").addEventListener("click", e => {
   const boton = e.target.closest("button.bloque");
   if (!boton) return;
-
   const { fecha, hora } = boton.dataset;
-  const cerrados = new Set(borrador[fecha] || []);
-  const abrir = cerrados.has(hora);
-  if (abrir) cerrados.delete(hora); else cerrados.add(hora);
-
-  if (cerrados.size) borrador[fecha] = Array.from(cerrados);
-  else delete borrador[fecha];
-
-  boton.setAttribute("aria-pressed", abrir);
-  boton.classList.toggle("bloque--cerrado", !abrir);
-  boton.querySelector(".bloque__texto").textContent = abrir ? "Disponible" : "Cerrado";
-  marcarCambios(true);
+  const seleccion = new Set(seleccionCierres[fecha] || []);
+  if (seleccion.has(hora)) seleccion.delete(hora);
+  else seleccion.add(hora);
+  if (seleccion.size) seleccionCierres[fecha] = Array.from(seleccion);
+  else delete seleccionCierres[fecha];
+  marcarCambios(Object.values(seleccionCierres).some(horas => horas.length));
+  pintarDisponibilidad();
 });
 
-document.getElementById("disponibilidad-guardar").addEventListener("click", () => {
+document.getElementById("rejilla-dias").addEventListener("click", e => {
+  const boton = e.target.closest("button[data-dia]");
+  if (boton && !boton.disabled) seleccionarTodoElDia(boton.dataset.dia);
+});
+
+document.getElementById("disponibilidad-enviar").addEventListener("click", () => {
   const empleada = empleadaActual();
   if (!empleada) return;
-  Sesion.guardarDisponibilidad(empleada.id, borrador);
-  marcarCambios(false, "Guardamos tu disponibilidad.");
+  const cierres = Object.entries(seleccionCierres)
+    .filter(([, horas]) => horas.length)
+    .map(([fecha, horas]) => ({ fecha, horas }));
+  const resultado = Sesion.solicitarCierreDisponibilidad(empleada.id, cierres);
+  if (!resultado.guardada) {
+    marcarCambios(true, resultado.mensaje);
+    return;
+  }
+  seleccionCierres = {};
+  marcarCambios(false, resultado.mensaje);
+  pintarDisponibilidad();
 });
 
 document.getElementById("semana-anterior").addEventListener("click", () => {
@@ -157,10 +229,9 @@ document.getElementById("semana-siguiente").addEventListener("click", () => {
   pintarDisponibilidad();
 });
 
-// Aviso del navegador si se intenta salir con cambios sin guardar
+document.addEventListener("agenda:cambio", pintarDisponibilidad);
 window.addEventListener("beforeunload", e => {
   if (hayCambios) e.preventDefault();
 });
 
-/* --- Arranque ------------------------------------------------ */
 iniciarPanel(pintarDisponibilidad, "empleada");

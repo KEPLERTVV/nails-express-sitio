@@ -34,7 +34,7 @@
       <!-- Disponibilidad semanal (solo empleadas) ------------- -->
       <div id="cuenta-panel">
         <h1 class="personal__titulo">Mi disponibilidad</h1>
-        <p class="cuenta__intro">Marca los horarios en los que puedes atender. Los bloques cerrados no se ofrecen a las clientas al agendar.</p>
+        <p class="cuenta__intro">Selecciona las horas que necesitas cerrar y envía la solicitud. La administradora debe aprobarla para que deje de ofrecerse al agendar.</p>
 
         <div class="semana">
           <p class="semana__rango" id="semana-rango" aria-live="polite"></p>
@@ -47,19 +47,22 @@
         <!-- La tabla se desplaza de lado en pantallas chicas -->
         <div class="rejilla-horas__marco" tabindex="0" role="region" aria-labelledby="semana-rango">
           <table class="rejilla-horas">
-            <caption class="solo-lector">Disponibilidad por día y horario. Activa un bloque para abrirlo o cerrarlo.</caption>
+            <caption class="solo-lector">Horarios por día. Selecciona los bloques que quieres solicitar cerrar.</caption>
             <thead id="rejilla-dias"></thead>
             <tbody id="rejilla-bloques"></tbody>
           </table>
         </div>
 
         <div class="disponibilidad__pie">
-          <p class="disponibilidad__nota">Los bloques ya reservados por clientas no se pueden cerrar.</p>
+          <p class="disponibilidad__nota">Puedes seleccionar todo el día o solo algunos horarios. Los bloques reservados y las solicitudes pendientes no se pueden seleccionar.</p>
           <div class="disponibilidad__guardar">
             <span class="disponibilidad__estado" id="disponibilidad-estado" role="status"></span>
-            <button class="boton boton--principal" type="button" id="disponibilidad-guardar">Guardar cambios</button>
+            <button class="boton boton--principal" type="button" id="disponibilidad-enviar" disabled>Enviar solicitud</button>
           </div>
         </div>
+
+        <h2 class="personal__subtitulo">Mis solicitudes</h2>
+        <ol class="agenda" id="solicitudes-lista" aria-live="polite"></ol>
       </div>
 
       <!-- Sin sesión ---------------------------------------- -->

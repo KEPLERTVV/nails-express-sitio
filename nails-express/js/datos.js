@@ -65,7 +65,7 @@ const SIN_PREFERENCIA = { id: 0, nombre: "Sin preferencia", especialidades: [], 
 
 /* Clase Disponibilidad --------------------------------------- */
 /* Bloques base del día. Un bloque no se ofrece si ya tiene una
-   cita (CITAS) o si la empleada lo cerró en disponibilidad.html. */
+   cita (CITAS) o si la administradora aceptó su cierre solicitado. */
 const HORARIOS = ["11:00", "12:15", "13:30", "14:45", "16:00", "17:15", "18:30", "19:45"];
 
 /* Clase Usuario ---------------------------------------------- */

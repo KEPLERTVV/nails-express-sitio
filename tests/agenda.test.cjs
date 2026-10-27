@@ -123,6 +123,86 @@ test('la rejilla de disponibilidad protege todos los bloques de la reserva', () 
   assert.equal(bloques.has(fecha + '|13:30'), false);
 });
 
+test('una empleada envía cierres pendientes y solo se aplican al aprobarlos', () => {
+  const e = entorno();
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 2, nombre: 'Ana Torres', rol: 'empleada'
+  }));
+  const solicitud = e.run(`Sesion.solicitarCierreDisponibilidad(2, [
+    { fecha: '${fecha}', horas: ['11:00', '12:15'] }
+  ])`);
+  assert.equal(solicitud.guardada, true);
+  assert.equal(e.run('Sesion.cerradosDe(2, "' + fecha + '").length'), 0);
+  const id = e.run('Sesion.solicitudesDisponibilidad(2)[0].id');
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 3, nombre: 'Laura Treviño', rol: 'administradora'
+  }));
+  assert.equal(e.run(`Sesion.resolverSolicitudDisponibilidad("${id}", "aceptada").resuelta`), true);
+  assert.deepEqual(Array.from(e.run(`Sesion.cerradosDe(2, "${fecha}")`)), ['11:00', '12:15']);
+  assert.equal(e.run(`Sesion.validarCita({
+    fecha: '${fecha}', hora: '11:00', servicioId: 2, disenoId: 0,
+    duracion: 90, sucursalId: 2, empleadaId: 2
+  }).codigo`), 'capacidad');
+});
+
+test('la administradora no puede aprobar un cierre que ya tiene una cita', () => {
+  const e = entorno();
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 2, nombre: 'Ana Torres', rol: 'empleada'
+  }));
+  e.run(`Sesion.solicitarCierreDisponibilidad(2, [
+    { fecha: '${fecha}', horas: ['11:00'] }
+  ])`);
+  const id = e.run('Sesion.solicitudesDisponibilidad(2)[0].id');
+  e.run(`Sesion.guardarCita(${JSON.stringify(reserva({ duracion: 60 }))})`);
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 3, nombre: 'Laura Treviño', rol: 'administradora'
+  }));
+  const resultado = e.run(`Sesion.resolverSolicitudDisponibilidad("${id}", "aceptada")`);
+  assert.equal(resultado.resuelta, false);
+  assert.match(resultado.mensaje, /ya tienen citas reservadas/);
+  assert.equal(e.run('Sesion.solicitudesDisponibilidad(2)[0].estado'), 'pendiente');
+  assert.deepEqual(Array.from(e.run(`Sesion.cerradosDe(2, "${fecha}")`)), []);
+});
+
+test('la aprobación protege citas sin preferencia que dependen de la empleada', () => {
+  const e = entorno();
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 2, nombre: 'Ana Torres', rol: 'empleada'
+  }));
+  e.run(`Sesion.solicitarCierreDisponibilidad(2, [
+    { fecha: '${fecha}', horas: ['11:00'] }
+  ])`);
+  const id = e.run('Sesion.solicitudesDisponibilidad(2)[0].id');
+  e.run(`Sesion.guardarCita(${JSON.stringify(reserva({
+    folio: 'SIN-PREFERENCIA', duracion: 60, servicioId: 1, empleadaId: 0
+  }))})`);
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 3, nombre: 'Laura Treviño', rol: 'administradora'
+  }));
+  const resultado = e.run(`Sesion.resolverSolicitudDisponibilidad("${id}", "aceptada")`);
+  assert.equal(resultado.resuelta, false);
+  assert.match(resultado.mensaje, /cita sin preferencia/);
+  assert.equal(e.run('Sesion.solicitudesDisponibilidad(2)[0].estado'), 'pendiente');
+});
+
+test('rechazar una solicitud la conserva en el historial sin cerrar horarios', () => {
+  const e = entorno();
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 2, nombre: 'Ana Torres', rol: 'empleada'
+  }));
+  e.run(`Sesion.solicitarCierreDisponibilidad(2, [
+    { fecha: '${fecha}', horas: ['11:00'] }
+  ])`);
+  const id = e.run('Sesion.solicitudesDisponibilidad(2)[0].id');
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 3, nombre: 'Laura Treviño', rol: 'administradora'
+  }));
+  assert.equal(e.run(`Sesion.resolverSolicitudDisponibilidad("${id}", "rechazada").resuelta`), true);
+  assert.equal(e.run('Sesion.solicitudesDisponibilidad(2)[0].estado'), 'rechazada');
+  assert.deepEqual(Array.from(e.run(`Sesion.cerradosDe(2, "${fecha}")`)), []);
+});
+
 // DOM mínimo para ejecutar los scripts completos, sus eventos y almacenamiento.
 // Estas comprobaciones no sustituyen una prueba visual en navegador.
 function entorno() {
@@ -168,6 +248,19 @@ function entorno() {
 }
 const seleccion = `Object.assign(cita, { servicio: SERVICIOS[1], diseno: DISENOS[0], sucursal: SUCURSALES[1],
   empleada: SIN_PREFERENCIA, fecha: '${fecha}', hora: '11:00', nombre: 'Prueba', telefono: '8111111111' }); paso = 3;`;
+test('la empleada puede seleccionar todos los bloques del día como solicitud', () => {
+  const e = entorno();
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({
+    id: 2, nombre: 'Ana Torres', rol: 'empleada'
+  }));
+  e.cargar('panel.js');
+  e.cargar('disponibilidad.js');
+  assert.match(e.document.getElementById('rejilla-dias').innerHTML, /Todo el día/);
+  e.run(`seleccionarTodoElDia('2030-01-02')`);
+  assert.equal(e.run(`seleccionCierres['2030-01-02'].length`), 8);
+  assert.equal(e.document.getElementById('disponibilidad-enviar').disabled, false);
+});
+
 test('al confirmar rechaza un horario ocupado después de seleccionarlo', () => {
   const e = entorno(); e.cargar('agendar.js'); e.run(seleccion);
   e.run(`Sesion.guardarCita(${JSON.stringify(reserva({ empleadaId: 2 }))});

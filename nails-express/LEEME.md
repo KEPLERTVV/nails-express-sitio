@@ -20,7 +20,8 @@ agendar.html      Flujo de agendado en tres pasos
 mis-citas.html    Panel de la clienta: citas próximas e historial
 mi-perfil.html    Panel de la clienta: datos personales y contraseña
 panel-empleada.html  Panel de la empleada: agenda del día
-disponibilidad.html  Panel de la empleada: abrir o cerrar bloques por semana
+disponibilidad.html  Panel de la empleada: solicitar cierres por día u horario
+admin-disponibilidad.html Panel de la administradora: aprobar o rechazar cierres
 panel-admin.html     Panel de la administradora: agenda de ambas sucursales
 admin-ingresos.html  Panel de la administradora: ingresos y comisiones por mes
 admin-catalogo.html  Panel de la administradora: precios, duraciones y tonos agotados
@@ -35,7 +36,8 @@ js/agendar.js     Lógica del agendado
 js/panel.js       Partes comunes de los paneles (sesión, permisos por rol)
 js/reprogramar.js Ventana para mover una cita (la usan clienta y empleada)
 js/panel-empleada.js  Agenda del día y métricas de la empleada
-js/disponibilidad.js  Rejilla semanal de disponibilidad
+js/disponibilidad.js  Solicitudes de cierre de disponibilidad de la empleada
+js/admin-disponibilidad.js Revisión de solicitudes de cierre por la administradora
 js/panel-admin.js     Agenda general con filtro por sucursal y día
 js/admin-ingresos.js  Reporte mensual por empleada y por sucursal
 js/admin-catalogo.js  Edición del catálogo (se aplica en todo el sitio)
@@ -56,7 +58,7 @@ Los arreglos de `datos.js` corresponden a las clases del diagrama:
 | `SERVICIOS`   | `Servicio`         |
 | `SUCURSALES`  | `Sucursal`         |
 | cuentas de `USUARIOS` con rol `empleada` | `Empleada` (hereda de `Usuario`) |
-| `HORARIOS` + bloques cerrados por empleada | `Disponibilidad` |
+| `HORARIOS` + cierres de disponibilidad aceptados | `Disponibilidad` |
 | `USUARIOS` (campo `rol`) | `Usuario` y sus subclases |
 | `CITAS` | `Cita` |
 | objeto `cita` en `agendar.js` | `Cita`    |
@@ -81,8 +83,11 @@ mismo nombre que aparecen en el diagrama de clases.
 - Inicio de sesión y registro (las cuentas nuevas siempre son clientas).
 - Panel de la clienta: sus citas (reprogramar, cancelar, volver a agendar)
   y su perfil. Reprogramar y cancelar sin costo, hasta 4 horas antes.
-- Panel de la empleada: agenda del día y disponibilidad semanal; lo que
-  cierra deja de ofrecerse al agendar.
+- Panel de la empleada: agenda del día y solicitudes de cierre de disponibilidad
+  por día completo o por horarios específicos. Los cierres solo se aplican si
+  la administradora los acepta; los bloques con cita no se pueden cerrar.
+- Panel de la administradora: acepta o rechaza solicitudes de disponibilidad;
+  al aceptar, la solicitud vuelve a comprobar que no existan citas en esos bloques.
 - Folio único por cita (por ejemplo `NE-K7P3QA`): la clienta lo guarda y lo
   muestra al llegar. La empleada busca la cita por folio o teléfono, la marca
   como Atendida o No llegó, y la reprograma o cancela si la clienta llama.
@@ -99,10 +104,11 @@ Con Node.js 20 o posterior, desde la carpeta `nails-express-sitio`, ejecuta:
 node --test tests/agenda.test.cjs
 ```
 
-Cubren empalmes, cierre, especialidades, capacidad sin asignación, reprogramación,
-limpieza de horarios y fallos de almacenamiento. Usan datos en memoria y no
-modifican las reservas del navegador. Las pruebas de interfaz usan un DOM
-simulado; la revisión visual en navegador se realiza por separado.
+Cubren empalmes, cierres aceptados y rechazados, conflictos con citas,
+especialidades, capacidad sin asignación, reprogramación, limpieza de horarios
+y fallos de almacenamiento. Usan datos en memoria y no modifican las reservas
+del navegador. Las pruebas de interfaz usan un DOM simulado; la revisión visual
+en navegador se realiza por separado.
 
 ## Cuentas de prueba
 
@@ -125,12 +131,13 @@ Para volver a los datos originales, ejecuta `localStorage.clear()` en la consola
 ## Qué falta para la siguiente etapa
 
 - Base de datos y servidor: hoy todo se guarda en el navegador, y la
-  revisión de roles solo oculta pantallas (el servidor debe validarla).
+  revisión de roles solo oculta pantallas (el servidor debe validar roles,
+  solicitudes y decisiones).
   Por eso una cita agendada en un celular no aparece en la computadora del
   salón: para probar el flujo completo, usa el mismo navegador.
 - Cobro real del anticipo mediante una pasarela de pago.
-- Vistas internas adicionales para empleadas solo si el salón define un uso claro;
-  por ahora la administradora controla los datos del personal.
+- Otras vistas internas para empleadas solo si el salón define un uso claro;
+  el panel actual incluye agenda y solicitudes de cierre de disponibilidad.
 - Reemplazar los precios y tonos de ejemplo por los reales del salón.
 
 ## Pendientes rápidos

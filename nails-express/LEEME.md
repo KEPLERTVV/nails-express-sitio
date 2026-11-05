@@ -146,3 +146,27 @@ Para volver a los datos originales, ejecuta `localStorage.clear()` en la consola
   tengamos, van en `img/` y se referencian desde el HTML.
 - Verificar con el salón los precios, duraciones y la lista real de tonos
   en `js/datos.js`.
+
+
+
+---Hashes.
+
+clienta1: $2y$10$ZNc7YfTMli03SchLapG.vuWrJ16naqXt8/EEt.tPAdBXwgK6ZHb26
+clienta2: $2y$10$egtcYU16jQRdykrRS0M8keC4pR2jV/z1OwPV0lD2Bpd3NHeke3GAC
+clienta3: $2y$10$r/CRc49Xm/a9SfG5a9qq.uqPtoqqqTt6HJNG.1gT5oxR2sTvHsbga
+
+---de empleadas.
+
+Ana Torres
+    $2y$10$wYNq.cJcnpe6LBzaPKTKeuZluwx65ZJc5nExFMTX19jlJhs5E6CbW
+
+Karla Ruiz
+    $2y$10$S37KX2uAHApGZjgI7Tkl2.dh62PxUaW6IDLoRgSmlPnNv.Z44/8Sy
+
+Sofía Luna
+    $2y$10$QaZVV7IZ.775kJ97o/JEVewwXTxxbcpr15p7kItoXv3o5P/fc4auy
+
+---admin
+
+Laura Treviño
+    $2y$10$yNmi58Tg61K.VHyO.3LTQO1ITDxevto0cZd5oQ55WGfi6yNIyX5DS

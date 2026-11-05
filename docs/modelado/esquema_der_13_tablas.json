@@ -1,0 +1,677 @@
+{
+  "tables": {
+    "Usuarios": [
+      {
+        "name": "Id_usuario",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Nombre_usuario",
+        "type": "VARCHAR(100)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Correo_usuario",
+        "type": "VARCHAR(120)",
+        "keys": "UQ",
+        "nullable": false
+      },
+      {
+        "name": "Telefono_usuario",
+        "type": "CHAR(10)",
+        "keys": "UQ",
+        "nullable": false
+      },
+      {
+        "name": "Contrasena_usuario",
+        "type": "VARCHAR(255)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Rol_usuario",
+        "type": "VARCHAR(20)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Fecha_registro_usuario",
+        "type": "DATETIME",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Estado_usuario",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Sucursales": [
+      {
+        "name": "Id_sucursal",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Nombre_sucursal",
+        "type": "VARCHAR(80)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Direccion_sucursal",
+        "type": "VARCHAR(150)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Apertura_sucursal",
+        "type": "TIME",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Cierre_sucursal",
+        "type": "TIME",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Activa_sucursal",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Servicios": [
+      {
+        "name": "Id_servicio",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Nombre_servicio",
+        "type": "VARCHAR(80)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Descripcion_servicio",
+        "type": "VARCHAR(255)",
+        "keys": "",
+        "nullable": true
+      },
+      {
+        "name": "Precio_servicio",
+        "type": "DECIMAL(8,2)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Duracion_servicio",
+        "type": "SMALLINT",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Requiere_especialista_servicio",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Disenos": [
+      {
+        "name": "Id_diseno",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Nombre_diseno",
+        "type": "VARCHAR(80)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Costo_extra_diseno",
+        "type": "DECIMAL(8,2)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Duracion_extra_diseno",
+        "type": "SMALLINT",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Activo_diseno",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Familias_color": [
+      {
+        "name": "Id_familia_color",
+        "type": "VARCHAR(30)",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Nombre_familia_color",
+        "type": "VARCHAR(60)",
+        "keys": "UQ",
+        "nullable": false
+      },
+      {
+        "name": "Activa_familia_color",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Colores": [
+      {
+        "name": "Id_color",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Nombre_color",
+        "type": "VARCHAR(80)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Familia_id_color",
+        "type": "VARCHAR(30)",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Hex_color",
+        "type": "CHAR(7)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Marca_color",
+        "type": "VARCHAR(60)",
+        "keys": "",
+        "nullable": true
+      },
+      {
+        "name": "Disponible_color",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Empleadas": [
+      {
+        "name": "Id_empleada",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Usuario_id_empleada",
+        "type": "INT",
+        "keys": "FK,UQ",
+        "nullable": false
+      },
+      {
+        "name": "Sucursal_id_empleada",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Comision_empleada",
+        "type": "DECIMAL(5,2)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Activa_empleada",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Especialidades_empleada": [
+      {
+        "name": "Id_especialidad_empleada",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Empleada_id_especialidad",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Servicio_id_especialidad",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      }
+    ],
+    "Horarios": [
+      {
+        "name": "Id_horario",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Hora_inicio_horario",
+        "type": "TIME",
+        "keys": "UQ",
+        "nullable": false
+      },
+      {
+        "name": "Orden_horario",
+        "type": "SMALLINT",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Activo_horario",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Disponibilidad_empleada": [
+      {
+        "name": "Id_disponibilidad",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Empleada_id_disponibilidad",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Horario_id_disponibilidad",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Fecha_disponibilidad",
+        "type": "DATE",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Estado_disponibilidad",
+        "type": "VARCHAR(20)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Motivo_disponibilidad",
+        "type": "VARCHAR(150)",
+        "keys": "",
+        "nullable": true
+      }
+    ],
+    "Citas": [
+      {
+        "name": "Folio_cita",
+        "type": "VARCHAR(12)",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Cliente_id_cita",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": true
+      },
+      {
+        "name": "Nombre_cliente_cita",
+        "type": "VARCHAR(100)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Telefono_cliente_cita",
+        "type": "CHAR(10)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Servicio_id_cita",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Diseno_id_cita",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Color_id_cita",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": true
+      },
+      {
+        "name": "Sucursal_id_cita",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Empleada_id_cita",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": true
+      },
+      {
+        "name": "Fecha_cita",
+        "type": "DATE",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Horario_id_cita",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Total_cita",
+        "type": "DECIMAL(8,2)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Duracion_cita",
+        "type": "SMALLINT",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Pago_cita",
+        "type": "VARCHAR(20)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Estado_cita",
+        "type": "VARCHAR(20)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Fecha_creacion_cita",
+        "type": "DATETIME",
+        "keys": "",
+        "nullable": false
+      }
+    ],
+    "Solicitudes_disponibilidad": [
+      {
+        "name": "Id_solicitud_disponibilidad",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Empleada_id_solicitud",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Fecha_cierre_solicitud",
+        "type": "DATE",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Estado_solicitud",
+        "type": "VARCHAR(20)",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Fecha_creacion_solicitud",
+        "type": "DATETIME",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Usuario_resuelve_id_solicitud",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": true
+      },
+      {
+        "name": "Fecha_resolucion_solicitud",
+        "type": "DATETIME",
+        "keys": "",
+        "nullable": true
+      }
+    ],
+    "Detalle_solicitud_disponibilidad": [
+      {
+        "name": "Id_detalle_solicitud",
+        "type": "INT",
+        "keys": "PK",
+        "nullable": false
+      },
+      {
+        "name": "Solicitud_id_detalle",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      },
+      {
+        "name": "Horario_id_detalle",
+        "type": "INT",
+        "keys": "FK",
+        "nullable": false
+      }
+    ]
+  },
+  "relationships": [
+    [
+      "Usuarios",
+      "Id_usuario",
+      "Empleadas",
+      "Usuario_id_empleada",
+      "1",
+      "0..1",
+      "cuenta laboral"
+    ],
+    [
+      "Sucursales",
+      "Id_sucursal",
+      "Empleadas",
+      "Sucursal_id_empleada",
+      "1",
+      "0..N",
+      "emplea"
+    ],
+    [
+      "Empleadas",
+      "Id_empleada",
+      "Especialidades_empleada",
+      "Empleada_id_especialidad",
+      "1",
+      "0..N",
+      "tiene"
+    ],
+    [
+      "Servicios",
+      "Id_servicio",
+      "Especialidades_empleada",
+      "Servicio_id_especialidad",
+      "1",
+      "0..N",
+      "autoriza"
+    ],
+    [
+      "Familias_color",
+      "Id_familia_color",
+      "Colores",
+      "Familia_id_color",
+      "1",
+      "0..N",
+      "agrupa"
+    ],
+    [
+      "Empleadas",
+      "Id_empleada",
+      "Disponibilidad_empleada",
+      "Empleada_id_disponibilidad",
+      "1",
+      "0..N",
+      "registra excepciones"
+    ],
+    [
+      "Horarios",
+      "Id_horario",
+      "Disponibilidad_empleada",
+      "Horario_id_disponibilidad",
+      "1",
+      "0..N",
+      "define bloque"
+    ],
+    [
+      "Usuarios",
+      "Id_usuario",
+      "Citas",
+      "Cliente_id_cita",
+      "0..1",
+      "0..N",
+      "reserva"
+    ],
+    [
+      "Servicios",
+      "Id_servicio",
+      "Citas",
+      "Servicio_id_cita",
+      "1",
+      "0..N",
+      "se reserva"
+    ],
+    [
+      "Disenos",
+      "Id_diseno",
+      "Citas",
+      "Diseno_id_cita",
+      "1",
+      "0..N",
+      "complementa"
+    ],
+    [
+      "Colores",
+      "Id_color",
+      "Citas",
+      "Color_id_cita",
+      "0..1",
+      "0..N",
+      "se elige"
+    ],
+    [
+      "Sucursales",
+      "Id_sucursal",
+      "Citas",
+      "Sucursal_id_cita",
+      "1",
+      "0..N",
+      "recibe"
+    ],
+    [
+      "Empleadas",
+      "Id_empleada",
+      "Citas",
+      "Empleada_id_cita",
+      "0..1",
+      "0..N",
+      "atiende"
+    ],
+    [
+      "Horarios",
+      "Id_horario",
+      "Citas",
+      "Horario_id_cita",
+      "1",
+      "0..N",
+      "marca inicio"
+    ],
+    [
+      "Empleadas",
+      "Id_empleada",
+      "Solicitudes_disponibilidad",
+      "Empleada_id_solicitud",
+      "1",
+      "0..N",
+      "solicita"
+    ],
+    [
+      "Usuarios",
+      "Id_usuario",
+      "Solicitudes_disponibilidad",
+      "Usuario_resuelve_id_solicitud",
+      "0..1",
+      "0..N",
+      "resuelve como administradora"
+    ],
+    [
+      "Solicitudes_disponibilidad",
+      "Id_solicitud_disponibilidad",
+      "Detalle_solicitud_disponibilidad",
+      "Solicitud_id_detalle",
+      "1",
+      "1..N",
+      "incluye"
+    ],
+    [
+      "Horarios",
+      "Id_horario",
+      "Detalle_solicitud_disponibilidad",
+      "Horario_id_detalle",
+      "1",
+      "0..N",
+      "identifica bloque"
+    ]
+  ],
+  "unique": {
+    "Especialidades_empleada": [
+      "Empleada_id_especialidad",
+      "Servicio_id_especialidad"
+    ],
+    "Disponibilidad_empleada": [
+      "Empleada_id_disponibilidad",
+      "Horario_id_disponibilidad",
+      "Fecha_disponibilidad"
+    ],
+    "Detalle_solicitud_disponibilidad": [
+      "Solicitud_id_detalle",
+      "Horario_id_detalle"
+    ]
+  }
+}

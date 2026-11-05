@@ -1,0 +1,134 @@
+erDiagram
+    direction LR
+    %% Modelo propuesto; no es una migracion ejecutada.
+    %% NULL se indica; los demas campos son NOT NULL.
+    %% PK INT: AUTO_INCREMENT. Claves compuestas: ver comentarios finales.
+    usuarios["Usuarios"] {
+        INT Id_usuario PK
+        VARCHAR(100) Nombre_usuario
+        VARCHAR(120) Correo_usuario UK
+        CHAR(10) Telefono_usuario UK
+        VARCHAR(255) Contrasena_usuario
+        VARCHAR(20) Rol_usuario
+        DATETIME Fecha_registro_usuario
+        BOOLEAN Estado_usuario
+    }
+    sucursales["Sucursales"] {
+        INT Id_sucursal PK
+        VARCHAR(80) Nombre_sucursal
+        VARCHAR(150) Direccion_sucursal
+        TIME Apertura_sucursal
+        TIME Cierre_sucursal
+        BOOLEAN Activa_sucursal
+    }
+    servicios["Servicios"] {
+        INT Id_servicio PK
+        VARCHAR(80) Nombre_servicio
+        VARCHAR(255) Descripcion_servicio "NULL"
+        DECIMAL(8,2) Precio_servicio
+        SMALLINT Duracion_servicio
+        BOOLEAN Requiere_especialista_servicio
+    }
+    disenos["Disenos"] {
+        INT Id_diseno PK
+        VARCHAR(80) Nombre_diseno
+        DECIMAL(8,2) Costo_extra_diseno
+        SMALLINT Duracion_extra_diseno
+        BOOLEAN Activo_diseno
+    }
+    familiasColor["Familias_color"] {
+        VARCHAR(30) Id_familia_color PK
+        VARCHAR(60) Nombre_familia_color UK
+        BOOLEAN Activa_familia_color
+    }
+    colores["Colores"] {
+        INT Id_color PK
+        VARCHAR(80) Nombre_color
+        VARCHAR(30) Familia_id_color FK
+        CHAR(7) Hex_color
+        VARCHAR(60) Marca_color "NULL"
+        BOOLEAN Disponible_color
+    }
+    empleadas["Empleadas"] {
+        INT Id_empleada PK
+        INT Usuario_id_empleada FK, UK
+        INT Sucursal_id_empleada FK
+        DECIMAL(5,2) Comision_empleada
+        BOOLEAN Activa_empleada
+    }
+    especialidadesEmpleada["Especialidades_empleada"] {
+        INT Id_especialidad_empleada PK
+        INT Empleada_id_especialidad FK
+        INT Servicio_id_especialidad FK
+    }
+    horarios["Horarios"] {
+        INT Id_horario PK
+        TIME Hora_inicio_horario UK
+        SMALLINT Orden_horario
+        BOOLEAN Activo_horario
+    }
+    disponibilidadEmpleada["Disponibilidad_empleada"] {
+        INT Id_disponibilidad PK
+        INT Empleada_id_disponibilidad FK
+        INT Horario_id_disponibilidad FK
+        DATE Fecha_disponibilidad
+        VARCHAR(20) Estado_disponibilidad
+        VARCHAR(150) Motivo_disponibilidad "NULL"
+    }
+    citas["Citas"] {
+        VARCHAR(12) Folio_cita PK
+        INT Cliente_id_cita FK "NULL"
+        VARCHAR(100) Nombre_cliente_cita
+        CHAR(10) Telefono_cliente_cita
+        INT Servicio_id_cita FK
+        INT Diseno_id_cita FK
+        INT Color_id_cita FK "NULL"
+        INT Sucursal_id_cita FK
+        INT Empleada_id_cita FK "NULL"
+        DATE Fecha_cita
+        INT Horario_id_cita FK
+        DECIMAL(8,2) Total_cita
+        SMALLINT Duracion_cita
+        VARCHAR(20) Pago_cita
+        VARCHAR(20) Estado_cita
+        DATETIME Fecha_creacion_cita
+    }
+    solicitudesDisponibilidad["Solicitudes_disponibilidad"] {
+        INT Id_solicitud_disponibilidad PK
+        INT Empleada_id_solicitud FK
+        DATE Fecha_cierre_solicitud
+        VARCHAR(20) Estado_solicitud
+        DATETIME Fecha_creacion_solicitud
+        INT Usuario_resuelve_id_solicitud FK "NULL"
+        DATETIME Fecha_resolucion_solicitud "NULL"
+    }
+    detalleSolicitudDisponibilidad["Detalle_solicitud_disponibilidad"] {
+        INT Id_detalle_solicitud PK
+        INT Solicitud_id_detalle FK
+        INT Horario_id_detalle FK
+    }
+    usuarios ||..o| empleadas : "cuenta laboral"
+    sucursales ||..o{ empleadas : "emplea"
+    empleadas ||..o{ especialidadesEmpleada : "tiene"
+    servicios ||..o{ especialidadesEmpleada : "autoriza"
+    familiasColor ||..o{ colores : "agrupa"
+    empleadas ||..o{ disponibilidadEmpleada : "registra excepciones"
+    horarios ||..o{ disponibilidadEmpleada : "define bloque"
+    usuarios |o..o{ citas : "reserva"
+    servicios ||..o{ citas : "se reserva"
+    disenos ||..o{ citas : "complementa"
+    colores |o..o{ citas : "se elige"
+    sucursales ||..o{ citas : "recibe"
+    empleadas |o..o{ citas : "atiende"
+    horarios ||..o{ citas : "marca inicio"
+    empleadas ||..o{ solicitudesDisponibilidad : "solicita"
+    usuarios |o..o{ solicitudesDisponibilidad : "resuelve como administradora"
+    solicitudesDisponibilidad ||..|{ detalleSolicitudDisponibilidad : "incluye"
+    horarios ||..o{ detalleSolicitudDisponibilidad : "identifica bloque"
+    %% UNIQUE Especialidades_empleada (Empleada_id_especialidad, Servicio_id_especialidad)
+    %% UNIQUE Disponibilidad_empleada (Empleada_id_disponibilidad, Horario_id_disponibilidad, Fecha_disponibilidad)
+    %% UNIQUE Detalle_solicitud_disponibilidad (Solicitud_id_detalle, Horario_id_detalle)
+    %% Una solicitud contiene al menos un detalle: validar al guardar la cabecera y sus detalles juntos.
+    %% Estado_solicitud: pendiente -> aceptada o rechazada; resolucion de todos los detalles.
+    %% Cierres efectivos: excepciones cerradas UNION detalles de solicitudes aceptadas.
+    %% No duplicar cierres aceptados en Disponibilidad_empleada. No hay FK directa entre ambas.

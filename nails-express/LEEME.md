@@ -89,8 +89,9 @@ mismo nombre que aparecen en el diagrama de clases.
 - Panel de la administradora: acepta o rechaza solicitudes de disponibilidad;
   al aceptar, la solicitud vuelve a comprobar que no existan citas en esos bloques.
 - Folio único por cita (por ejemplo `NE-K7P3QA`): la clienta lo guarda y lo
-  muestra al llegar. La empleada busca la cita por folio o teléfono, la marca
-  como Atendida o No llegó, y la reprograma o cancela si la clienta llama.
+  muestra al llegar. La empleada busca la cita por folio o teléfono y, si está
+  asignada a ella, la marca como Atendida o No llegó, o la reprograma o cancela
+  si la clienta llama. Las citas ajenas son solo de consulta.
   Los ingresos y comisiones solo cuentan las citas atendidas.
 - Panel de la administradora (una sola cuenta, para ambas sucursales):
   agenda general, ingresos y comisiones, catálogo y precios, y empleadas.
@@ -127,6 +128,48 @@ en navegador se realiza por separado.
 
 Todo lo que se cambia en el sitio se guarda en el navegador (localStorage).
 Para volver a los datos originales, ejecuta `localStorage.clear()` en la consola.
+
+## Completar empleada y tono desde la agenda
+
+Cada empleada gestiona únicamente las citas asignadas a su cuenta en su sucursal.
+Puede reprogramar fecha y hora, pero desde los paneles del personal solo la
+administradora cambia la empleada asignada. El buscador permite consultar otras
+citas sin ofrecer botones para modificarlas. Las citas sin preferencia esperan
+la asignación de la administradora antes de que una empleada registre su atención.
+Deshacer la atención conserva la asignación. La agenda se actualiza cuando llegan
+cambios de otra pestaña o al volver a la ventana; un formulario de reprogramación
+abierto se cierra si su cita cambia o pasa a otra empleada.
+
+1. Entra con la cuenta de administradora y abre **Agenda general**.
+   En **Ver citas** puedes elegir **De un día** o **Todas las fechas**; ambas
+   opciones respetan los filtros de sucursal y **Estado**. Todas las fechas incluye
+   citas pasadas y futuras. Los dos iconos de **Orden por fecha y hora** permiten
+   ver primero las más antiguas o las más recientes; al pasar el cursor muestran
+   su función y el botón seleccionado queda resaltado. También funcionan con teclado.
+   Por defecto se excluyen canceladas; puedes consultar **Canceladas** o **Todos
+   los estados**. **Pendientes de atención** agrupa todas las activas; también
+   puedes filtrar por la etiqueta visible: Confirmadas, Pendientes de pago,
+   Sin marcar, Atendidas o No llegó. Las métricas corresponden a las citas
+   mostradas; canceladas y ausencias no aportan al ingreso estimado.
+2. Selecciona el día y pulsa **Asignar / completar datos** en una cita activa pendiente de atención.
+3. Elige la empleada y el tono; pulsa **Guardar cambios**. Cerrar o presionar Escape descarta la edición.
+
+La empleada debe estar activa, pertenecer a la sucursal y realizar el servicio.
+Al cambiarla en una cita activa se comprueban duración completa, cierres y capacidad
+para las demás citas, incluidas las que no tienen preferencia. Se permite completar
+la asignación cuando ya llegó la hora, mientras siga pendiente de atención.
+Las citas atendidas, canceladas o marcadas **No llegó** no ofrecen esta edición.
+Si la cita se marca como atendida mientras el formulario está abierto, el guardado
+se rechaza para conservar la empleada y el tono registrados.
+
+El tono puede permanecer **Por elegir**. Un tono agotado o una empleada inactiva ya
+registrados se conservan si solo se modifica el otro campo. Guardar no marca la cita
+como atendida ni modifica servicio, diseño, fecha, duración, pago o total.
+Si la cita cambió mientras el formulario estaba abierto, hay que volver a abrirlo.
+
+Esta demostración usa JavaScript y localStorage; al recargar conserva los cambios
+en el mismo navegador y origen. Todavía no escribe en MySQL. La autorización y las
+validaciones deberán repetirse en PHP al implementar el backend.
 
 ## Qué falta para la siguiente etapa
 

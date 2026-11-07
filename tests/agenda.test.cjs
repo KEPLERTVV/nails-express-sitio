@@ -248,6 +248,216 @@ function entorno() {
 }
 const seleccion = `Object.assign(cita, { servicio: SERVICIOS[1], diseno: DISENOS[0], sucursal: SUCURSALES[1],
   empleada: SIN_PREFERENCIA, fecha: '${fecha}', hora: '11:00', nombre: 'Prueba', telefono: '8111111111' }); paso = 3;`;
+
+// Edición administrativa: se ejercita la misma operación que usa el formulario.
+function edicionAdmin(extra = {}) {
+  const e = entorno();
+  const original = reserva({ empleadaId: 0, colorId: null, total: 590, pago: 'anticipo', ...extra });
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({ id: 3, nombre: 'Laura', rol: 'administradora' }));
+  e.run(`Sesion.guardarCita(${JSON.stringify(original)})`);
+  return { ...e, original,
+    editar: (campos = { empleadaId: 5, colorId: 1 }) => e.run(
+      `Sesion.completarCita('EXISTENTE', ${JSON.stringify(campos)}, ${JSON.stringify(original)})`),
+    leer: () => JSON.parse(JSON.stringify(e.run(`Sesion.citas().find(c => c.folio === 'EXISTENTE')`))) };
+}
+
+test('admin asigna empleada y tono sin cambiar servicio, diseño, pago, total ni estado', () => {
+  const e = edicionAdmin();
+  assert.equal(e.editar({ empleadaId: 5, colorId: 1, total: 1, estado: 'atendida' }).guardada, true);
+  assert.deepEqual(e.leer(), { ...e.original, empleadaId: 5, colorId: 1, asignadaAlAtender: false });
+});
+
+test('completar cita exige sesión administrativa y una cita activa', () => {
+  for (const rol of ['cliente', 'empleada', null]) {
+    const e = edicionAdmin();
+    e.localStorage.setItem('nailsExpress.sesion', JSON.stringify(rol ? { nombre: 'Otra', rol } : null));
+    assert.equal(e.editar().guardada, false);
+    assert.deepEqual(e.leer(), e.original);
+  }
+  for (const estado of ['atendida', 'cancelada', 'no-asistio']) {
+    assert.equal(edicionAdmin({ estado }).editar().guardada, false);
+  }
+  const e = edicionAdmin();
+  e.localStorage.setItem('nailsExpress.citas', '[]');
+  assert.equal(e.editar().guardada, false);
+});
+
+test('admin solo puede asignar empleadas activas de la sucursal y especialidad', () => {
+  assert.equal(edicionAdmin().editar({ empleadaId: 4, colorId: null }).guardada, false);
+  assert.equal(edicionAdmin({ servicioId: 1 }).editar().guardada, false);
+  const e = edicionAdmin();
+  e.run('USUARIOS.find(e => e.id === 5).activa = false');
+  assert.equal(e.editar().guardada, false);
+});
+
+test('asignar revisa la duración completa, cierres y capacidad para citas sin preferencia', () => {
+  const e = edicionAdmin();
+  e.run(`Sesion.guardarCita(${JSON.stringify(reserva({ folio: 'OTRA', empleadaId: 5, hora: '12:15' }))})`);
+  assert.equal(e.editar().guardada, false);
+  assert.deepEqual(e.leer(), e.original);
+  const cerrado = edicionAdmin();
+  cerrado.localStorage.setItem('nailsExpress.disponibilidad', JSON.stringify({ 5: { [fecha]: ['12:15'] } }));
+  assert.equal(cerrado.editar().guardada, false);
+  const capacidad = edicionAdmin();
+  capacidad.run(`Sesion.guardarCita(${JSON.stringify(reserva({ folio: 'GELISH', empleadaId: 0, servicioId: 1, duracion: 60 }))})`);
+  assert.equal(capacidad.editar({ empleadaId: 2, colorId: null }).guardada, false);
+  assert.equal(capacidad.editar().guardada, true);
+});
+
+test('se puede asignar al llegar aunque ya haya comenzado la hora, conservando validación de empalmes', () => {
+  const e = edicionAdmin({ fecha: '2029-12-31' });
+  assert.equal(e.editar().guardada, true);
+  const ocupado = edicionAdmin({ fecha: '2029-12-31' });
+  ocupado.run(`Sesion.guardarCita(${JSON.stringify(reserva({ folio: 'OTRA', fecha: '2029-12-31', empleadaId: 5 }))})`);
+  assert.equal(ocupado.editar().guardada, false);
+});
+
+test('una cita atendida conserva empleada y tono aunque la admin intente modificarlos', () => {
+  const e = edicionAdmin({ fecha: '2029-12-31', estado: 'atendida', empleadaId: 2, asignadaAlAtender: true });
+  assert.equal(e.editar({ empleadaId: 0, colorId: null }).guardada, false);
+  assert.equal(e.editar().guardada, false);
+  assert.equal(e.editar({ empleadaId: 2, colorId: 1 }).guardada, false);
+  assert.deepEqual(e.leer(), e.original);
+});
+
+test('completar rechaza una cita que pasó a atendida mientras el formulario estaba abierto', () => {
+  const e = edicionAdmin({ empleadaId: 2, colorId: 1 });
+  e.run(`Sesion.guardarCita(${JSON.stringify({ ...e.original, estado: 'atendida' })})`);
+  assert.equal(e.editar({ empleadaId: 5, colorId: 2 }).guardada, false);
+  assert.deepEqual(e.leer(), { ...e.original, estado: 'atendida' });
+});
+
+test('admin muestra el botón y abre la edición solo para citas activas', () => {
+  const e = edicionAdmin();
+  e.cargar('panel.js');
+  e.cargar('panel-admin.js');
+  for (const estado of ['atendida', 'no-asistio', 'cancelada']) {
+    e.run(`Sesion.guardarCita(${JSON.stringify({ ...e.original, estado })})`);
+    assert.doesNotMatch(e.run('filaCitaGeneral(Sesion.citas()[0], true)'), /data-completar=/);
+    e.run('abrirCompletarCita("EXISTENTE")');
+    assert.equal(e.document.getElementById('completar-cita').open, false);
+  }
+  e.run(`Sesion.guardarCita(${JSON.stringify(e.original)})`);
+  assert.match(e.run('filaCitaGeneral(Sesion.citas()[0], true)'), /data-completar=/);
+  e.run('abrirCompletarCita("EXISTENTE")');
+  assert.equal(e.document.getElementById('completar-cita').open, true);
+});
+
+test('tono admite Por elegir y conserva un tono agotado; rechaza nuevos tonos agotados o inexistentes', () => {
+  for (const colorId of [4, 999, 0, '1']) {
+    const e = edicionAdmin();
+    assert.equal(e.editar({ empleadaId: 0, colorId }).guardada, false);
+  }
+  const e = edicionAdmin({ empleadaId: 2, colorId: 4 });
+  assert.equal(e.editar({ empleadaId: 2, colorId: 4 }).guardada, true);
+  assert.equal(e.editar({ empleadaId: 2, colorId: null }).guardada, true);
+  assert.equal(e.leer().colorId, null);
+});
+
+test('completar solo el tono conserva asignación histórica aunque la empleada esté inactiva', () => {
+  const e = edicionAdmin({ empleadaId: 2, asignadaAlAtender: true });
+  e.run('USUARIOS.find(e => e.id === 2).activa = false');
+  assert.equal(e.editar({ empleadaId: 2, colorId: 1 }).guardada, true);
+  assert.equal(e.leer().asignadaAlAtender, true);
+});
+
+test('editar no sobrescribe una cita que cambió en otra pestaña', () => {
+  const e = edicionAdmin();
+  e.run(`Sesion.guardarCita(${JSON.stringify({ ...e.original, hora: '16:00' })})`);
+  assert.equal(e.editar().guardada, false);
+  assert.equal(e.leer().hora, '16:00');
+  assert.equal(e.leer().empleadaId, 0);
+});
+
+test('completar avisa errores de almacenamiento y notifica la agenda solo si guarda', () => {
+  const e = edicionAdmin();
+  let cambios = 0;
+  e.document.addEventListener('agenda:cambio', () => cambios++);
+  const guardar = e.localStorage.setItem;
+  e.localStorage.setItem = () => { throw new Error('Sin espacio'); };
+  assert.equal(e.editar().guardada, false);
+  assert.equal(cambios, 0);
+  assert.deepEqual(e.leer(), e.original);
+  e.localStorage.setItem = guardar;
+  assert.equal(e.editar().guardada, true);
+  assert.equal(cambios, 1);
+});
+test('la agenda de empleada actualiza asignaciones y búsqueda al cambiar datos en otra pestaña', () => {
+  const e = entorno();
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({ id: 2, nombre: 'Ana', rol: 'empleada' }));
+  e.cargar('panel.js');
+  e.cargar('panel-empleada.js');
+  e.run(`Sesion.guardarCita(${JSON.stringify(reserva({ folio: 'NE-EXISTENTE', fecha: '2030-01-01' }))});
+    ultimaBusqueda = 'EXISTENTE';`);
+  // El DOM mínimo no serializa textContent como HTML; se sustituye solo esa ayuda.
+  e.run('escaparHTML = texto => String(texto);');
+  e.evento('agenda:cambio');
+  assert.match(e.document.getElementById('agenda-lista').innerHTML, /data-fila="NE-EXISTENTE"/);
+  e.run(`Sesion.guardarCita(${JSON.stringify(reserva({ folio: 'NE-EXISTENTE', fecha: '2030-01-01', empleadaId: 5 }))});`);
+  e.evento('agenda:cambio');
+  assert.doesNotMatch(e.document.getElementById('agenda-lista').innerHTML, /data-fila="NE-EXISTENTE"/);
+  assert.match(e.document.getElementById('buscar-resultados').innerHTML, /Sofía Luna/);
+  assert.equal(e.document.getElementById('metrica-citas').textContent, 0);
+  assert.doesNotMatch(e.document.getElementById('buscar-resultados').innerHTML, /data-accion=/);
+  e.run(`Sesion.guardarCita(${JSON.stringify(reserva({ folio: 'NE-EXISTENTE', fecha: '2030-01-01' }))});
+    window.dispatchEvent({ type: 'focus' });`);
+  assert.match(e.document.getElementById('agenda-lista').innerHTML, /data-fila="NE-EXISTENTE"/);
+  assert.equal(e.document.getElementById('metrica-citas').textContent, 1);
+});
+
+function reprogramacionEmpleada(extra = {}) {
+  const e = entorno();
+  e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({ id: 2, nombre: 'Ana', rol: 'empleada' }));
+  const original = reserva(extra);
+  e.run(`Sesion.guardarCita(${JSON.stringify(original)})`);
+  return { ...e, original, mover: (cambios = { fecha, hora: '16:00', empleadaId: 2 }) =>
+    e.run(`Sesion.reprogramarCitaEmpleada(${JSON.stringify(original)}, ${JSON.stringify(cambios)})`) };
+}
+
+test('empleada reprograma fecha y hora de su propia cita sin transferirla', () => {
+  const e = reprogramacionEmpleada();
+  assert.equal(e.mover({ fecha, hora: '16:00', empleadaId: 5 }).valida, false);
+  assert.equal(e.run('Sesion.citas()[0].empleadaId'), 2);
+  assert.equal(e.mover().valida, true);
+  assert.equal(e.run('Sesion.citas()[0].hora'), '16:00');
+  assert.equal(e.run('Sesion.citas()[0].empleadaId'), 2);
+});
+
+test('empleada no puede gestionar citas ajenas, sin asignar, de otra sucursal o con cuenta inactiva', () => {
+  for (const extra of [{ empleadaId: 5 }, { empleadaId: 0 }, { sucursalId: 1 }]) {
+    const e = reprogramacionEmpleada(extra);
+    assert.equal(e.run('Sesion.puedeGestionarCita(Sesion.citas()[0])'), false);
+    assert.equal(e.mover().valida, false);
+  }
+  const e = reprogramacionEmpleada();
+  e.run('USUARIOS.find(c => c.id === 2).activa = false');
+  assert.equal(e.mover().valida, false);
+});
+
+test('reprogramación de empleada rechaza citas cambiadas, canceladas, atendidas o ya comenzadas', () => {
+  for (const extra of [{ estado: 'cancelada' }, { estado: 'atendida' }, { fecha: '2029-12-31' }]) {
+    assert.equal(reprogramacionEmpleada(extra).mover().valida, false);
+  }
+  const e = reprogramacionEmpleada();
+  e.run(`Sesion.guardarCita(${JSON.stringify({ ...e.original, colorId: 1 })})`);
+  assert.equal(e.mover().valida, false);
+  assert.equal(e.run('Sesion.citas()[0].colorId'), 1);
+});
+
+test('modal de empleada oculta selector y se cierra si la cita es reasignada mientras está abierto', () => {
+  const e = reprogramacionEmpleada();
+  e.cargar('reprogramar.js');
+  e.run('Reprogramar.abrir(Sesion.citas()[0], { deClienta: false });');
+  assert.equal(e.document.getElementById('reprogramar').open, true);
+  assert.doesNotMatch(e.document.getElementById('reprogramar-empleadas').innerHTML, /data-empleada=/);
+  e.run(`Sesion.guardarCita(${JSON.stringify({ ...e.original, empleadaId: 5 })})`);
+  e.evento('agenda:cambio');
+  assert.equal(e.document.getElementById('reprogramar').open, false);
+  assert.equal(e.mover().valida, false);
+  e.run('Reprogramar.abrir(Sesion.citas()[0], { deClienta: false });');
+  assert.equal(e.document.getElementById('reprogramar').open, false);
+});
+
 test('la empleada puede seleccionar todos los bloques del día como solicitud', () => {
   const e = entorno();
   e.localStorage.setItem('nailsExpress.sesion', JSON.stringify({

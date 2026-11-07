@@ -39,19 +39,57 @@
         <p class="personal__contexto">Ambas sucursales</p>
         <h1 class="personal__titulo" id="agenda-fecha"></h1>
 
-        <!-- Filtros: sucursal y día -->
-        <div class="admin-filtros">
+        <!-- Todas las fechas conserva el filtro por sucursal. -->
+        <div class="admin-filtros admin-filtros--agenda">
           <div class="filtros admin-filtros__grupo" id="filtro-sucursal" role="group" aria-label="Sucursal"></div>
+          <div class="campo admin-filtros__fecha">
+            <label for="agenda-periodo">Ver citas</label>
+            <select id="agenda-periodo">
+              <option value="dia">De un día</option>
+              <option value="todas">Todas las fechas</option>
+            </select>
+          </div>
           <div class="campo admin-filtros__fecha">
             <label for="agenda-dia">Día</label>
             <input type="date" id="agenda-dia">
+          </div>
+          <div class="campo admin-filtros__fecha">
+            <label for="agenda-estado">Estado</label>
+            <select id="agenda-estado">
+              <option value="sin-canceladas">Todos excepto canceladas</option>
+              <option value="todos">Todos los estados</option>
+              <option value="activa">Pendientes de atención</option>
+              <option value="confirmada">Confirmadas</option>
+              <option value="pendiente">Pendientes de pago</option>
+              <option value="por-confirmar">Sin marcar</option>
+              <option value="atendida">Atendidas</option>
+              <option value="no-asistio">No llegó</option>
+              <option value="cancelada">Canceladas</option>
+            </select>
+          </div>
+          <div class="campo admin-filtros__fecha">
+            <span class="orden-agenda__etiqueta" id="agenda-orden-etiqueta">Orden por fecha y hora</span>
+            <div class="orden-agenda" id="agenda-orden" role="group" aria-labelledby="agenda-orden-etiqueta">
+              <button class="orden-agenda__boton" type="button" data-orden="asc" aria-pressed="true"
+                      aria-label="Más antiguas primero" title="Más antiguas primero">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M5 19V5m-3 3 3-3 3 3M12 6h3m-3 6h6m-6 6h9" />
+                </svg>
+              </button>
+              <button class="orden-agenda__boton" type="button" data-orden="desc" aria-pressed="false"
+                      aria-label="Más recientes primero" title="Más recientes primero">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M5 5v14m-3-3 3 3 3-3M12 6h9m-9 6h6m-6 6h3" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 
         <div class="metricas metricas--tres">
           <div class="metrica">
             <strong class="metrica__valor" id="metrica-citas"></strong>
-            <span class="metrica__nombre">Citas del día</span>
+            <span class="metrica__nombre" id="metrica-citas-etiqueta">Citas del día</span>
           </div>
           <div class="metrica">
             <strong class="metrica__valor" id="metrica-ingreso"></strong>
@@ -64,6 +102,8 @@
         </div>
 
         <h2 class="personal__subtitulo">Citas</h2>
+        <p class="disponibilidad__nota">Completa la empleada y el tono cuando la clienta los decida en el salón.</p>
+        <p class="aviso aviso--exito" id="agenda-aviso" role="status"></p>
         <ol class="agenda" id="agenda-lista" aria-live="polite"></ol>
       </div>
 
@@ -88,6 +128,31 @@
 
     </main>
   </div>
+
+  <!-- Edición limitada a los datos que se pueden concretar en el salón. -->
+  <dialog class="acceso" id="completar-cita" aria-labelledby="completar-titulo"
+          aria-describedby="completar-resumen">
+    <div class="acceso__cuerpo">
+      <h2 class="acceso__titulo" id="completar-titulo">Asignar / completar datos</h2>
+      <p class="reprogramar__actual" id="completar-resumen"></p>
+      <form id="form-completar-cita" class="formulario">
+        <div class="campo">
+          <label for="completar-empleada">Empleada</label>
+          <select id="completar-empleada" aria-describedby="completar-ayuda-empleada"></select>
+          <p class="acceso__ayuda" id="completar-ayuda-empleada"></p>
+        </div>
+        <div class="campo">
+          <label for="completar-tono">Tono</label>
+          <select id="completar-tono" aria-describedby="completar-ayuda-tono"></select>
+          <p class="acceso__ayuda" id="completar-ayuda-tono">Puedes dejarlo por elegir hasta que la clienta lo decida.</p>
+        </div>
+        <p class="disponibilidad__nota" id="completar-nota"></p>
+        <div class="aviso" id="completar-error" role="alert"></div>
+        <button class="boton boton--principal acceso__enviar" type="submit">Guardar cambios</button>
+      </form>
+    </div>
+    <button class="acceso__cerrar" type="button" id="completar-cerrar" aria-label="Cerrar sin guardar">&times;</button>
+  </dialog>
 
   <script src="js/datos.js"></script>
   <script src="js/agenda-citas.js"></script>

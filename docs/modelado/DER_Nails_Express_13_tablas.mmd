@@ -92,6 +92,9 @@ erDiagram
         VARCHAR(20) Pago_cita
         VARCHAR(20) Estado_cita
         DATETIME Fecha_creacion_cita
+        SMALLINT Reprogramaciones_cita
+        VARCHAR(20) Cancelada_por_cita "NULL"
+        BOOLEAN Asignada_al_atender_cita
     }
     solicitudesDisponibilidad["Solicitudes_disponibilidad"] {
         INT Id_solicitud_disponibilidad PK

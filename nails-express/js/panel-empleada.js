@@ -1,6 +1,6 @@
 /* ============================================================
    panel-empleada.js — Agenda del día y control de las citas
-   La empleada tiene el control de las citas de su sucursal,
+   La empleada tiene el control de sus propias citas,
    tenga cuenta la clienta o no:
    - Muestra cada bloque de HORARIOS: con cita, libre o cerrado.
    - Busca citas por folio (lo que la clienta trae al llegar) o
@@ -51,7 +51,7 @@ function pintarAgenda() {
     return filaVacia(hora, hoy, "libre", "Espacio libre");
   }).join("");
 
-  // "Sin preferencia" de hoy en su sucursal: cualquiera puede tomarlas
+  // Sin preferencia: consulta; la administradora asigna quién las atenderá.
   const sinAsignar = Sesion.citas().filter(c =>
     c.empleadaId === 0 && c.sucursalId === empleada.sucursal && c.fecha === hoy && c.estado !== "cancelada")
     .sort((a, b) => a.hora.localeCompare(b.hora));
@@ -103,9 +103,14 @@ function boton(accion, texto, tipo, cita) {
 }
 
 function accionesCita(cita, empleada) {
-  // Solo gestiona las de su sucursal; de otra, solo informa
+  // Solo gestiona sus propias citas; las demás son consulta.
   if (cita.sucursalId !== empleada.sucursal) {
     return `<p class="cita__pregunta">Es de ${escaparHTML(nombreSucursal(cita.sucursalId))}: la gestiona esa sucursal.</p>`;
+  }
+  if (!Sesion.puedeGestionarCita(cita)) {
+    return `<p class="cita__pregunta">${cita.empleadaId
+      ? "Solo consulta: esta cita está asignada a otra empleada."
+      : "Pendiente de asignación: pide a la administradora que asigne una empleada."}</p>`;
   }
   if (cita.estado === "cancelada") return "";
 
@@ -203,8 +208,9 @@ function enfocar(zona, folio, accion) {
 }
 
 function guardarYRepintar(cita, mensaje) {
-  Sesion.guardarCita(cita);
-  aviso.textContent = mensaje;
+  const guardada = Sesion.guardarCita(cita);
+  aviso.textContent = guardada ? mensaje : "No pudimos guardar el cambio. Revisa el almacenamiento del navegador e inténtalo de nuevo.";
+  aviso.classList.toggle("aviso--exito", guardada);
   pintarAgenda();
 }
 
@@ -218,18 +224,25 @@ document.getElementById("cuenta-panel").addEventListener("click", e => {
   const cita  = Sesion.citas().find(c => c.folio === folio);
   const yo    = empleadaActual();
   if (!cita || !yo) return;
+  // Relee los permisos y el estado al pulsar, aunque el botón se dibujara antes
+  // de una reasignación en otra pestaña. Ocultar botones no basta.
+  const accion = botonAccion.dataset.accion;
+  const accionesValidas = cita.estado === "cancelada" ? []
+    : ["atendida", "no-asistio"].includes(cita.estado) ? ["deshacer"]
+    : yaEmpezo(cita) ? ["atendida", "no-asistio"]
+    : ["reprogramar", "cancelar", "mantener", "confirmar-cancelar"];
+  if (!Sesion.puedeGestionarCita(cita) || !accionesValidas.includes(accion)) {
+    aviso.textContent = "La cita cambió o ya no te corresponde. Actualizamos tu agenda.";
+    aviso.classList.remove("aviso--exito");
+    pintarAgenda();
+    aviso.focus();
+    return;
+  }
   const quien = cita.nombre || "la clienta";
 
   switch (botonAccion.dataset.accion) {
     case "atendida":
-      // Una "sin preferencia" queda a nombre de quien la atendió (para su comisión).
-      // Se recuerda para poder deshacerlo.
-      guardarYRepintar({
-        ...cita,
-        estado: "atendida",
-        empleadaId: cita.empleadaId || yo.id,
-        asignadaAlAtender: !cita.empleadaId
-      }, `Marcaste a ${quien} como atendida.`);
+      guardarYRepintar({ ...cita, estado: "atendida" }, `Marcaste a ${quien} como atendida.`);
       enfocar(zona, folio, "deshacer");
       break;
 
@@ -239,9 +252,9 @@ document.getElementById("cuenta-panel").addEventListener("click", e => {
       break;
 
     case "deshacer": {
-      // Vuelve a "activa" y, si se había asignado al atender, vuelve a "sin preferencia"
+      // Deshacer la atención conserva la asignación; solo la admin puede cambiarla.
       const { asignadaAlAtender, ...resto } = cita;
-      guardarYRepintar({ ...resto, estado: "activa", empleadaId: asignadaAlAtender ? 0 : cita.empleadaId },
+      guardarYRepintar({ ...resto, estado: "activa" },
         `Se quitó la marca de la cita de ${quien}.`);
       enfocar(zona, folio, "atendida");
       break;
@@ -282,3 +295,12 @@ document.getElementById("cuenta-panel").addEventListener("click", e => {
 
 /* --- Arranque ------------------------------------------------ */
 iniciarPanel(pintarAgenda, "empleada");
+
+// Una asignación hecha en otra pestaña cambia tanto la agenda personal
+// como el buscador. Releer los datos evita conservar citas de otra empleada
+// en la agenda o dejar fuera las que acaban de asignarse a esta cuenta.
+function actualizarAgendaEmpleada() {
+  if (Sesion.actual()?.rol === "empleada") pintarAgenda();
+}
+document.addEventListener("agenda:cambio", actualizarAgendaEmpleada);
+window.addEventListener("focus", actualizarAgendaEmpleada);

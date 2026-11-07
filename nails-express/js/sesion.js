@@ -729,6 +729,80 @@
       return guardarRegistro(CLAVE_CITAS, cita, "folio");
     },
 
+    // El buscador es informativo; encontrar una cita no concede permiso para editarla.
+    puedeGestionarCita(cita) {
+      const sesion = sesionActual();
+      const empleada = sesion?.rol === "empleada" ? this.buscarEmpleada(sesion.id) : null;
+      return Boolean(cita && empleada?.activa && cita.empleadaId === empleada.id &&
+        cita.sucursalId === empleada.sucursal);
+    },
+
+    reprogramarCitaEmpleada(original, { fecha, hora, empleadaId }) {
+      const error = mensaje => ({ valida: false, codigo: "gestion", mensaje });
+      const actual = todasLasCitas().find(c => c.folio === original.folio);
+      if (!this.puedeGestionarCita(actual)) {
+        return error("Esta cita ya no está asignada a tu cuenta. Solo puedes gestionar tus propias citas.");
+      }
+      if (JSON.stringify(actual) !== JSON.stringify(original)) {
+        return error("La cita cambió. Cierra el formulario y revisa los datos actuales antes de reprogramar.");
+      }
+      if (actual.estado !== "activa" || new Date(actual.fecha + "T" + actual.hora) <= new Date()) {
+        return error("Solo puedes reprogramar tus citas activas que aún no han comenzado.");
+      }
+      if (empleadaId !== actual.empleadaId) {
+        return error("Solo la administradora puede cambiar la empleada asignada desde los paneles del personal.");
+      }
+      // Se admiten únicamente fecha y hora; la asignación se toma del registro vigente.
+      const nueva = { ...actual, fecha, hora, reprogramaciones: (actual.reprogramaciones || 0) + 1 };
+      return this.reservarCita(nueva, { ignorarFolio: actual.folio });
+    },
+
+    // Completa una cita existente sin recalcular importes ni marcarla atendida.
+    // El formulario manda su copia original para detectar cambios en otra pestaña.
+    completarCita(folio, { empleadaId, colorId }, original) {
+      const error = mensaje => ({ guardada: false, mensaje });
+      if (sesionActual()?.rol !== "administradora") {
+        return error("Solo la administradora puede completar los datos de una cita.");
+      }
+      const actual = todasLasCitas().find(c => c.folio === folio);
+      // Revisa el estado vigente, incluso si la atención se registró con el formulario abierto.
+      if (!actual || actual.estado !== "activa") {
+        return error("Solo puedes modificar empleada y tono de citas activas pendientes de atención. Cierra el formulario y revisa la agenda.");
+      }
+      if (!original || JSON.stringify(actual) !== JSON.stringify(original)) {
+        return error("La cita cambió mientras la editabas. Cierra y vuelve a abrir el formulario para revisar los datos actuales.");
+      }
+      if (!Number.isInteger(empleadaId) || empleadaId < 0) {
+        return error("Selecciona una empleada válida.");
+      }
+      const cambiaEmpleada = empleadaId !== actual.empleadaId;
+      if (cambiaEmpleada && empleadaId && !this.empleadasPara(actual.servicioId, actual.sucursalId)
+        .some(e => e.id === empleadaId)) {
+        return error("Elige una empleada activa de esta sucursal que realice el servicio.");
+      }
+      if (colorId !== null && (!Number.isInteger(colorId) || !COLORES.some(c =>
+        c.id === colorId && (c.disponible || colorId === actual.colorId)))) {
+        return error("Elige un tono disponible o conserva el tono que ya estaba registrado.");
+      }
+
+      // Solo aceptamos estos dos campos; el resto se toma del registro actual.
+      const actualizada = { ...actual, empleadaId, colorId };
+      if (cambiaEmpleada) {
+        // Deshacer la atención no debe borrar una asignación explícita de la admin.
+        actualizada.asignadaAlAtender = false;
+        // También se puede asignar al llegar al local, cuando ya pasó la hora.
+        // Se conserva la revisión de duración, cierres y reservas sin preferencia.
+        const revision = AgendaCitas.validar({ ...contextoAgenda(), cita: actualizada,
+          ignorarFolio: folio, permitirPasado: true });
+        if (!revision.valida) return error(revision.mensaje);
+      }
+      if (!guardarRegistro(CLAVE_CITAS, actualizada, "folio")) {
+        return error("No pudimos guardar los cambios en este navegador. Revisa el almacenamiento e inténtalo de nuevo.");
+      }
+      notificarCambioAgenda();
+      return { guardada: true, mensaje: "Guardamos la empleada y el tono de la cita." };
+    },
+
     duracionCita(cita) {
       return AgendaCitas.duracionDe(cita, SERVICIOS, DISENOS);
     },

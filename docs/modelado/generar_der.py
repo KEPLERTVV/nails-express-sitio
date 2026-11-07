@@ -31,7 +31,7 @@ T = {
  'Especialidades_empleada': [F('Id_especialidad_empleada','INT','PK'), F('Empleada_id_especialidad','INT','FK'), F('Servicio_id_especialidad','INT','FK')],
  'Horarios': [F('Id_horario','INT','PK'), F('Hora_inicio_horario','TIME','UQ'), F('Orden_horario','SMALLINT'), F('Activo_horario','BOOLEAN')],
  'Disponibilidad_empleada': [F('Id_disponibilidad','INT','PK'), F('Empleada_id_disponibilidad','INT','FK'), F('Horario_id_disponibilidad','INT','FK'), F('Fecha_disponibilidad','DATE'), F('Estado_disponibilidad','VARCHAR(20)'), F('Motivo_disponibilidad','VARCHAR(150)',nullable=True)],
- 'Citas': [F('Folio_cita','VARCHAR(12)','PK'), F('Cliente_id_cita','INT','FK',True), F('Nombre_cliente_cita','VARCHAR(100)'), F('Telefono_cliente_cita','CHAR(10)'), F('Servicio_id_cita','INT','FK'), F('Diseno_id_cita','INT','FK'), F('Color_id_cita','INT','FK',True), F('Sucursal_id_cita','INT','FK'), F('Empleada_id_cita','INT','FK',True), F('Fecha_cita','DATE'), F('Horario_id_cita','INT','FK'), F('Total_cita','DECIMAL(8,2)'), F('Duracion_cita','SMALLINT'), F('Pago_cita','VARCHAR(20)'), F('Estado_cita','VARCHAR(20)'), F('Fecha_creacion_cita','DATETIME')],
+ 'Citas': [F('Folio_cita','VARCHAR(12)','PK'), F('Cliente_id_cita','INT','FK',True), F('Nombre_cliente_cita','VARCHAR(100)'), F('Telefono_cliente_cita','CHAR(10)'), F('Servicio_id_cita','INT','FK'), F('Diseno_id_cita','INT','FK'), F('Color_id_cita','INT','FK',True), F('Sucursal_id_cita','INT','FK'), F('Empleada_id_cita','INT','FK',True), F('Fecha_cita','DATE'), F('Horario_id_cita','INT','FK'), F('Total_cita','DECIMAL(8,2)'), F('Duracion_cita','SMALLINT'), F('Pago_cita','VARCHAR(20)'), F('Estado_cita','VARCHAR(20)'), F('Fecha_creacion_cita','DATETIME'), F('Reprogramaciones_cita','SMALLINT'), F('Cancelada_por_cita','VARCHAR(20)',nullable=True), F('Asignada_al_atender_cita','BOOLEAN')],
  # La cabecera contiene una sola fecha; horas[] se normaliza en el detalle.
  'Solicitudes_disponibilidad': [F('Id_solicitud_disponibilidad','INT','PK'), F('Empleada_id_solicitud','INT','FK'), F('Fecha_cierre_solicitud','DATE'), F('Estado_solicitud','VARCHAR(20)'), F('Fecha_creacion_solicitud','DATETIME'), F('Usuario_resuelve_id_solicitud','INT','FK',True), F('Fecha_resolucion_solicitud','DATETIME',nullable=True)],
  'Detalle_solicitud_disponibilidad': [F('Id_detalle_solicitud','INT','PK'), F('Solicitud_id_detalle','INT','FK'), F('Horario_id_detalle','INT','FK')],
@@ -78,7 +78,7 @@ def validate():
         assert sum('PK' in f['keys'] for f in fs)==1
 
 validate()
-(ROOT/'esquema_der_13_tablas.json').write_text(json.dumps(dict(tables=T,relationships=R,unique=UNIQUE),ensure_ascii=False,indent=2),encoding='utf-8')
+(ROOT/'esquema_der_13_tablas.json').write_bytes(json.dumps(dict(tables=T,relationships=R,unique=UNIQUE),ensure_ascii=False,indent=2).encode('utf-8'))
 ids = {t: ''.join([t.split('_')[0].lower()]+[p.title() for p in t.split('_')[1:]]) for t in T}
 lines = ['erDiagram','    direction LR', '    %% Modelo propuesto; no es una migracion ejecutada.', '    %% NULL se indica; los demas campos son NOT NULL.', '    %% PK INT: AUTO_INCREMENT. Claves compuestas: ver comentarios finales.']
 for t,fs in T.items():
@@ -95,7 +95,7 @@ for p,pk,ch,fk,pc,cc,label in R:
 for t,cols in UNIQUE.items():
     lines.append(f'    %% UNIQUE {t} ({", ".join(cols)})')
 lines += ['    %% Una solicitud contiene al menos un detalle: validar al guardar la cabecera y sus detalles juntos.', '    %% Estado_solicitud: pendiente -> aceptada o rechazada; resolucion de todos los detalles.', '    %% Cierres efectivos: excepciones cerradas UNION detalles de solicitudes aceptadas.', '    %% No duplicar cierres aceptados en Disponibilidad_empleada. No hay FK directa entre ambas.']
-(ROOT/'DER_Nails_Express_13_tablas.mmd').write_text('\n'.join(lines)+'\n',encoding='utf-8')
+(ROOT/'DER_Nails_Express_13_tablas.mmd').write_bytes(('\n'.join(lines)+'\n').encode('utf-8'))
 
 W,H=landscape(A3)
 C=canvas.Canvas(str(OUT/'DER_Nails_Express_13_tablas.pdf'),pagesize=(W,H))
@@ -167,7 +167,7 @@ note(42,648,535,'Relación laboral','Cada empleada tiene una cuenta y una sucurs
 note(610,648,538,'Especialidades sin duplicados','UNIQUE (Empleada_id_especialidad, Servicio_id_especialidad). Para ofrecer una empleada al reservar, debe estar activa y tener la especialidad del servicio.')
 finish()
 
-header(2,'02 / Citas y sus referencias','Citas conserva sus 16 campos. Las otras cajas repiten solo la PK de tablas descritas en las demás láminas.')
+header(2,'02 / Citas y sus referencias','Citas: 16 campos originales y 3 operativos. Las otras cajas repiten solo la PK de tablas descritas en las demás láminas.')
 card('Citas',355,145,480)
 for t,x,y in [('Usuarios',42,145),('Servicios',42,270),('Disenos',42,395),('Colores',905,145),('Sucursales',905,270),('Empleadas',905,395),('Horarios',905,520)]:
     card(t,x,y,243,True)
@@ -230,7 +230,7 @@ y=rule(620,y,8,'Ajustes de las once tablas originales','Se corrige Sucursales 1 
 y=rule(620,y,9,'Límite de esta entrega','Solo pendiente, aceptada y rechazada. Retiro de solicitudes, reapertura, motivos/respuestas, aprobación parcial y filtros quedan para Integradora 2. Motivo_disponibilidad procede del modelo anterior y no representa una nueva función implementada.')
 y=rule(620,y,10,'Cierre del trabajo por semanas','Semana 10: integrar la base de datos y corregir pendientes. Semana 11: terminar la conexión, las correcciones, las pruebas con persistencia real y la documentación; cerrar la versión funcional. Semana 12: solo exposición del proyecto acabado. Fecha indicada: 26 de noviembre.')
 y=rule(620,y,11,'Correspondencia con el prototipo','empleadaId y fecha pasan a la cabecera; horas[] se convierte en detalles que referencian Horarios. estado, creadaEn, resueltaEn y resueltaPor corresponden al estado, creación, resolución y usuario que decide. No se cambia el almacenamiento local con esta documentación.')
-y=rule(620,y,12,'Pendientes que deben cerrarse en semana 11','El DER conserva Citas del documento base. Antes de integrarla, resolver en el diccionario reprogramaciones, canceladaPor y asignadaAlAtender. No se posponen a Integradora 2. Verificar persistencia entre sesiones y permisos en el backend/API; no exponer credenciales de BD en el navegador.')
+y=rule(620,y,12,'Datos operativos de Citas incorporados','Citas añade Reprogramaciones_cita (entero, DEFAULT 0), Cancelada_por_cita (cliente/salon o NULL) y Asignada_al_atender_cita (booleano, DEFAULT 0). NULL conserva la ausencia de información sobre quién canceló. PHP deberá registrar el origen en las nuevas cancelaciones; el prototipo solo lo marca para salon.')
 finish()
 C.save()
 print(f'Validado: {len(T)} tablas, {len(R)} relaciones; PDF y fuente Mermaid generados en {ROOT}')

@@ -1204,6 +1204,34 @@ button.bloque--cerrado:hover { border-color: var(--texto-suave); background: #EE
 .admin-filtros__grupo { margin-bottom: 0; }
 .admin-filtros__fecha { min-width: 200px; margin: 0; }
 
+/* La agenda combina cuatro selectores; cada uno se adapta al ancho disponible. */
+.admin-filtros--agenda {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+.admin-filtros--agenda .admin-filtros__grupo { grid-column: 1 / -1; }
+.admin-filtros--agenda .admin-filtros__fecha { min-width: 0; }
+
+.orden-agenda__etiqueta { display: block; margin-bottom: .5rem; font-size: .88rem; font-weight: 500; }
+.orden-agenda { display: flex; gap: .5rem; }
+.orden-agenda__boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: white;
+  color: var(--texto);
+  cursor: pointer;
+}
+.orden-agenda__boton svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.orden-agenda__boton:hover { border-color: var(--magenta); background: var(--rosa-fondo); }
+.orden-agenda__boton[aria-pressed="true"] { background: var(--magenta-fuerte); border-color: var(--magenta-fuerte); color: white; }
+.orden-agenda__boton:focus-visible { outline: 2px solid var(--magenta); outline-offset: 3px; }
+
 /* título con botón a la derecha (Empleadas) */
 .admin-encabezado {
   display: flex;

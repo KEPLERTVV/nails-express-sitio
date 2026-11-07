@@ -74,7 +74,19 @@ La comparación se realiza por **empleada, fecha y horario**. No se copian las s
 5. Horarios conserva Activo_horario; añadirlo al diccionario: BOOLEAN, NOT NULL, DEFAULT 1.
 6. Se conservan las restricciones y valores del diccionario original salvo las aclaraciones expresas sobre el nuevo flujo. El JSON y Mermaid describen atributos y relaciones; no sustituyen todo el diccionario ni son un script de migración.
 
-Antes de migrar Citas se debe revisar por separado la representación de `reprogramaciones`, `canceladaPor` y `asignadaAlAtender`, que existen en el prototipo y no en sus 16 campos originales. Esta ampliación se concentra en las solicitudes, pero esa revisión es un pendiente de integración que debe resolverse a más tardar en la semana 11; no se pospone a Integradora 2. Igualmente, los identificadores textuales de solicitudes del navegador deberán mapearse a las PK propuestas; los identificadores de Usuarios y Empleadas no deben suponerse iguales. Las fechas de operación son locales y los instantes de creación/resolución requieren una convención temporal consistente al integrar SQL.
+### Ajuste al crear Citas
+
+Se resolvió la representación de los tres indicadores operativos existentes en el prototipo. Citas tiene ahora **19 campos**; se mantienen 13 tablas y 18 relaciones. El script [13_citas.sql](sql/13_citas.sql) crea esta última tabla y contiene las consultas de comprobación para ejecutarlas manualmente en Workbench; no se ha ejecutado desde esta documentación.
+
+| Campo adicional | Tipo y valor inicial | Correspondencia y uso |
+|---|---|---|
+| Reprogramaciones_cita | SMALLINT NOT NULL DEFAULT 0; mayor o igual a cero | `reprogramaciones` en reprogramar.js: número de cambios de programación. No es un historial de fechas anteriores. |
+| Cancelada_por_cita | VARCHAR(20) NULL; cliente o salon | `canceladaPor` en panel-empleada.js. Si tiene valor, la cita debe estar cancelada. NULL significa que no se registró un origen; no identifica automáticamente una cancelación de clienta. El prototipo solo escribe salon; PHP deberá escribir cliente cuando corresponda en las nuevas operaciones. |
+| Asignada_al_atender_cita | BOOLEAN NOT NULL DEFAULT FALSE; 0 o 1 | `asignadaAlAtender` en panel-empleada.js: recuerda que una cita sin preferencia recibió empleada al marcarla atendida. Permite recuperar la falta de asignación al deshacer esa acción. |
+
+Las referencias de cliente, color y empleada siguen siendo opcionales. Sin preferencia se representa con `Empleada_id_cita = NULL`; Sin diseño referencia el registro real de Disenos. El folio lo genera PHP, y debe ser único. Pago_cita expresa una modalidad y no acredita un pago recibido. No se introduce UNIQUE por empleada/fecha/hora: los solapamientos por duración, la capacidad sin preferencia, los cierres y la coherencia entre sucursal, especialidad y empleada se validarán en PHP con control de concurrencia.
+
+Los identificadores textuales de solicitudes del navegador deberán mapearse a las PK propuestas; los identificadores de Usuarios y Empleadas no deben suponerse iguales. Las fechas de operación son locales y los instantes de creación/resolución requieren una convención temporal consistente al integrar SQL. La integración y las pruebas completas siguen pendientes para el cierre de la semana 11.
 
 ## Alcance acordado
 

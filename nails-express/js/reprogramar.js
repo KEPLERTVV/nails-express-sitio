@@ -2,7 +2,8 @@
    reprogramar.js — Ventana para mover una cita
    La usan la clienta (mis-citas.html) y la empleada
    (panel-empleada.html, cuando la clienta llama para cambiarla).
-   Se puede cambiar día, hora y empleada de la misma sucursal.
+   La clienta puede cambiar día, hora y empleada de la misma sucursal.
+   La empleada solo cambia día y hora de sus propias citas.
    Servicio, diseño y sucursal se quedan: para cambiarlos, se
    cancela y se agenda de nuevo.
    Equivale a Cita.reprogramar() del diagrama de clases.
@@ -53,14 +54,17 @@ const Reprogramar = (function () {
 
   let moviendo  = null;   // { cita, empleadaId, fecha, hora } mientras la ventana está abierta
   let alGuardar = null;   // qué hace la página después de guardar
+  let deEmpleada = false;
 
   /* --- Abrir ------------------------------------------------- */
   // opciones.deClienta: true si la abre la propia clienta ("Tu cita…")
   // opciones.alGuardar(citaNueva): para que la página se actualice
   function abrir(cita, opciones) {
+    deEmpleada = opciones.deClienta === false;
+    if (deEmpleada && !Sesion.puedeGestionarCita(cita)) return;
     const servicio = SERVICIOS.find(s => s.id === cita.servicioId);
     const nombreServicio = servicio ? servicio.nombre.toLowerCase() : "cita";
-    moviendo  = { cita, empleadaId: cita.empleadaId, fecha: cita.fecha, hora: cita.hora };
+    moviendo  = { cita: JSON.parse(JSON.stringify(cita)), empleadaId: cita.empleadaId, fecha: cita.fecha, hora: cita.hora };
     alGuardar = opciones.alGuardar;
 
     const quien = opciones.deClienta ? `Tu ${nombreServicio}` : `El ${nombreServicio} de ${cita.nombre || "la clienta"}`;
@@ -86,12 +90,14 @@ const Reprogramar = (function () {
     // Solo ofrecer empleadas activas que realizan el servicio de la cita.
     const especialistas = Sesion.empleadasPara(cita.servicioId, cita.sucursalId);
     const opciones = especialistas.length ? especialistas.concat(SIN_PREFERENCIA) : [];
-    if (!opciones.some(e => e.id === moviendo.empleadaId)) {
+    if (!deEmpleada && !opciones.some(e => e.id === moviendo.empleadaId)) {
       moviendo.empleadaId = 0;
       moviendo.hora = "";
     }
 
-    document.getElementById("reprogramar-empleadas").innerHTML = especialistas.length
+    document.getElementById("reprogramar-empleadas").innerHTML = deEmpleada
+      ? `<p class="pasos__texto">${escaparHTML(Sesion.buscarEmpleada(cita.empleadaId)?.nombre || "Empleada asignada")}. Puedes cambiar fecha y hora. Para cambiar la empleada, solicita el ajuste a la administradora.</p>`
+      : especialistas.length
       ? opciones.map(e => `
           <button class="opcion" type="button" data-empleada="${e.id}" aria-pressed="${e.id === moviendo.empleadaId}">
             <strong>${escaparHTML(e.nombre)}</strong>
@@ -122,17 +128,20 @@ const Reprogramar = (function () {
       : !moviendo.fecha
         ? "Elige primero el día."
         : ocupadas.size === HORARIOS.length
-          ? "No hay horarios válidos para la duración completa ese día. Prueba otra fecha o empleada."
+          ? (deEmpleada ? "No hay horarios válidos para la duración completa ese día. Prueba otra fecha."
+            : "No hay horarios válidos para la duración completa ese día. Prueba otra fecha o empleada.")
           : "Los horarios consideran duración, cierre, reservas y disponibilidad de la empleada.";
   }
 
   /* --- Eventos ----------------------------------------------- */
   // Elegir empleada u hora; el foco se queda en el botón elegido
   formMover.addEventListener("click", e => {
+    if (!moviendo) return;
     const empleada = e.target.closest("[data-empleada]");
     const hora     = e.target.closest("[data-hora]");
     if (!empleada && !hora) return;
 
+    if (empleada && deEmpleada) return;
     if (empleada) moviendo.empleadaId = Number(empleada.dataset.empleada);
     if (hora)     moviendo.hora = hora.dataset.hora;
     aviso.textContent = "";
@@ -144,6 +153,7 @@ const Reprogramar = (function () {
   });
 
   campoFecha.addEventListener("change", () => {
+    if (!moviendo) return;
     moviendo.fecha = campoFecha.value;
     aviso.textContent = "";
     pintar();
@@ -151,6 +161,7 @@ const Reprogramar = (function () {
 
   formMover.addEventListener("submit", e => {
     e.preventDefault();
+    if (!moviendo) return;
     const { cita, empleadaId, fecha, hora } = moviendo;
 
     // Validación: sin alert(), el mensaje va en la ventana
@@ -172,7 +183,9 @@ const Reprogramar = (function () {
 
     const nueva = { ...cita, fecha, hora, empleadaId,
                     reprogramaciones: (cita.reprogramaciones || 0) + 1 };
-    const resultado = Sesion.reservarCita(nueva, { ignorarFolio: cita.folio });
+    const resultado = deEmpleada
+      ? Sesion.reprogramarCitaEmpleada(cita, { fecha, hora, empleadaId })
+      : Sesion.reservarCita(nueva, { ignorarFolio: cita.folio });
     if (!resultado.valida) {
       aviso.textContent = resultado.mensaje;
       pintar();
@@ -195,6 +208,13 @@ const Reprogramar = (function () {
 
   function actualizarDisponibilidad() {
     if (!moviendo) return;
+    if (deEmpleada) {
+      const actual = Sesion.citas().find(c => c.folio === moviendo.cita.folio);
+      if (!Sesion.puedeGestionarCita(actual) || JSON.stringify(actual) !== JSON.stringify(moviendo.cita)) {
+        ventana.close();
+        return;
+      }
+    }
     const horaAnterior = moviendo.hora;
     pintar();
     if (horaAnterior && !moviendo.hora) {
@@ -202,6 +222,7 @@ const Reprogramar = (function () {
     }
   }
   document.addEventListener("agenda:cambio", actualizarDisponibilidad);
+  document.addEventListener("sesion:cambio", () => { if (moviendo) ventana.close(); });
   window.addEventListener("focus", actualizarDisponibilidad);
 
   return { abrir };

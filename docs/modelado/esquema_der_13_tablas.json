@@ -428,6 +428,24 @@
         "type": "DATETIME",
         "keys": "",
         "nullable": false
+      },
+      {
+        "name": "Reprogramaciones_cita",
+        "type": "SMALLINT",
+        "keys": "",
+        "nullable": false
+      },
+      {
+        "name": "Cancelada_por_cita",
+        "type": "VARCHAR(20)",
+        "keys": "",
+        "nullable": true
+      },
+      {
+        "name": "Asignada_al_atender_cita",
+        "type": "BOOLEAN",
+        "keys": "",
+        "nullable": false
       }
     ],
     "Solicitudes_disponibilidad": [

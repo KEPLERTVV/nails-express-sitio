@@ -66,17 +66,17 @@
             </div>
             <button class="boton boton--principal" type="submit">Buscar</button>
           </form>
-          <p class="disponibilidad__nota" id="buscar-ayuda">Con el teléfono bastan los últimos 4 dígitos.</p>
+          <p class="disponibilidad__nota" id="buscar-ayuda">Con el teléfono bastan los últimos 4 dígitos. Solo puedes gestionar citas asignadas a ti; las demás se muestran como consulta.</p>
           <div class="buscador__resultados" id="buscar-resultados" data-zona="busqueda" aria-live="polite"></div>
         </section>
 
         <h2 class="personal__subtitulo">Agenda</h2>
         <ol class="agenda" id="agenda-lista" data-zona="agenda"></ol>
 
-        <!-- Citas de su sucursal sin empleada asignada: las toma quien esté libre -->
+        <!-- Consulta de citas pendientes de asignación por la administradora -->
         <section id="seccion-sin-asignar" class="oculto" aria-labelledby="titulo-sin-asignar">
           <h2 class="personal__subtitulo" id="titulo-sin-asignar">Sin preferencia en tu sucursal</h2>
-          <p class="disponibilidad__nota">Clientas que eligieron "Sin preferencia". Si la atiendes tú, al marcarla como atendida queda a tu nombre.</p>
+          <p class="disponibilidad__nota">Clientas que eligieron "Sin preferencia". La administradora asigna quién las atenderá; después aparecerán en la agenda de esa empleada.</p>
           <ol class="agenda agenda--sin-asignar" id="agenda-sin-asignar" data-zona="sin-asignar"></ol>
         </section>
       </div>

@@ -86,7 +86,7 @@ const AgendaCitas = (function () {
   }
 
   function validar({ cita, citas, empleadas, servicios, disenos, sucursales,
-                     horarios, cerrados, ignorarFolio, ahora = new Date() }) {
+                     horarios, cerrados, ignorarFolio, ahora = new Date(), permitirPasado = false }) {
     const error = (codigo, mensaje) => ({ valida: false, codigo, mensaje });
     const sucursal = sucursales.find(s => s.id === cita.sucursalId);
     const servicio = servicios.find(s => s.id === cita.servicioId);
@@ -98,7 +98,7 @@ const AgendaCitas = (function () {
       return error("fecha", "Elige un día válido para tu cita.");
     }
     if (!horarios.includes(cita.hora)) return error("hora", "Elige uno de los horarios disponibles.");
-    if (new Date(cita.fecha + "T" + cita.hora) <= ahora) {
+    if (!permitirPasado && new Date(cita.fecha + "T" + cita.hora) <= ahora) {
       return error("pasado", "Ese horario ya pasó. Elige un horario futuro.");
     }
     const intervalo = intervaloDe(cita, servicios, disenos);

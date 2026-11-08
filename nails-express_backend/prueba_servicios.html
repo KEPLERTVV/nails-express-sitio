@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prueba del catálogo</title>
+</head>
+<body>
+  <h1>Servicios desde MySQL</h1>
+
+  <p id="mensaje" role="status">Cargando servicios...</p>
+  <ul id="lista-servicios"></ul>
+
+  <script>
+    async function cargarServicios() {
+      const mensaje = document.getElementById('mensaje');
+      const lista = document.getElementById('lista-servicios');
+
+      try {
+        // Solicita los datos al archivo PHP de esta misma carpeta.
+        const respuesta = await fetch('servicios.php');
+
+        // Comprueba si el servidor respondió correctamente.
+        if (!respuesta.ok) {
+          throw new Error('El servidor no pudo entregar los servicios.');
+        }
+
+        // Convierte el JSON recibido en un arreglo de JavaScript.
+        const servicios = await respuesta.json();
+
+        if (!Array.isArray(servicios)) {
+          throw new Error('La respuesta no contiene una lista de servicios.');
+        }
+
+        // Crea un elemento visible por cada servicio de la base.
+        for (const servicio of servicios) {
+          const elemento = document.createElement('li');
+
+          // textContent muestra los datos como texto, sin interpretarlos como HTML.
+          elemento.textContent =
+            `${servicio.nombre} — $${servicio.precio} — ${servicio.duracion} minutos`;
+
+          lista.appendChild(elemento);
+        }
+
+        mensaje.textContent = servicios.length
+          ? 'Servicios cargados correctamente.'
+          : 'Todavía no hay servicios registrados.';
+
+      } catch (error) {
+        console.error(error);
+        mensaje.textContent = 'No se pudieron cargar los servicios.';
+      }
+    }
+
+    cargarServicios();
+  </script>
+</body>
+</html>

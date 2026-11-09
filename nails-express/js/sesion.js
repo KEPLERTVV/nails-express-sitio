@@ -109,9 +109,12 @@
     return Boolean(sesion) && sesion.rol !== "cliente" && Boolean(MENUS[sesion.rol]);
   }
 
+  // Copia en memoria de la cuenta confirmada por PHP.
+  // La sesión real permanece en el servidor.
+  let usuarioAutenticado = null;
+
   function sesionActual() {
-    const sesion = leer(CLAVE_SESION, null);
-    return sesion && sesion.nombre ? sesion : null;
+    return usuarioAutenticado;
   }
 
   // Datos públicos de la cuenta que se guardan en la sesión
@@ -423,33 +426,49 @@
   });
 
   /* --- Iniciar sesión ------------------------------------------ */
-  formEntrar.addEventListener("submit", e => {
+    formEntrar.addEventListener("submit", async e => {
     e.preventDefault();
     avisar(formEntrar, "");
+
     if (!validarFormulario(formEntrar)) return;
 
-    const usuario    = document.getElementById("entrar-usuario").value.trim();
-    const contrasena = document.getElementById("entrar-contrasena");
+    const usuario = document
+      .getElementById("entrar-usuario").value.trim();
 
-    const cuenta = todasLasCuentas().find(c => usuario.includes("@")
-      ? c.correo.toLowerCase() === usuario.toLowerCase()
-      : limpiarTelefono(c.telefono) === limpiarTelefono(usuario));
+    const campoContrasena = document
+      .getElementById("entrar-contrasena");
 
-    // Mismo mensaje en ambos casos para no revelar qué cuentas existen
-    if (!cuenta || cuenta.contrasena !== contrasena.value) {
-      avisar(formEntrar, "El correo, teléfono o contraseña no coinciden. Revísalos e inténtalo de nuevo.");
-      contrasena.select();
-      return;
+    const boton = formEntrar.querySelector('[type="submit"]');
+
+    // Evita enviar varias solicitudes mientras PHP responde.
+    boton.disabled = true;
+
+    try {
+      // PHP busca la cuenta en MySQL y verifica su contraseña.
+      const datos = await ApiSesion.iniciar(
+        usuario,
+        campoContrasena.value
+      );
+
+      if (!datos.autenticada || !datos.usuario) {
+        throw new Error("No se pudo confirmar el inicio de sesión.");
+      }
+
+      campoContrasena.value = "";
+
+      // Conserva los datos públicos recibidos del servidor.
+      usuarioAutenticado = datos.usuario;
+
+      // Cierra el formulario y actualiza el nombre y menú de la barra.
+      modal.close();
+      pintarBarra();
+
+    } catch (error) {
+      avisar(formEntrar, error.message);
+    } finally {
+      // Habilita el botón tanto si hubo éxito como si ocurrió un error.
+      boton.disabled = false;
     }
-
-    // Una empleada desactivada (ya no trabaja en el salón) no puede entrar.
-    // Se revisa después de la contraseña para no revelar el estado a terceros.
-    if (cuenta.rol === "empleada" && cuenta.activa === false) {
-      avisar(formEntrar, "Tu cuenta está desactivada. Si crees que es un error, habla con la administradora.");
-      return;
-    }
-
-    iniciarSesion(cuenta);
   });
 
   document.getElementById("acceso-olvido").addEventListener("click", e => {
@@ -516,10 +535,26 @@
     if (boton) boton.focus();
   }
 
-  function cerrarSesion() {
-    borrar(CLAVE_SESION);
-    pintarBarra();
-    if (enlacesSesion[0]) enlacesSesion[0].focus();
+  async function cerrarSesion() {
+    try {
+      // Pide a PHP que elimine la sesión del servidor y su cookie.
+      await ApiSesion.cerrar();
+
+      // Quita también la cuenta que mostramos en esta página.
+      usuarioAutenticado = null;
+
+      // Limpia cualquier sesión que quede del funcionamiento anterior.
+      borrar(CLAVE_SESION);
+
+      pintarBarra();
+
+      if (enlacesSesion[0]) {
+        enlacesSesion[0].focus();
+      }
+    } catch (error) {
+      // Si PHP no confirma el cierre, informamos del problema.
+      window.alert("No se pudo cerrar la sesión: " + error.message);
+    }
   }
 
   /* --- Barra superior ------------------------------------------ */
@@ -1060,5 +1095,23 @@
   migrarDatos();
   aplicarCatalogo();   // antes que inicio.js o agendar.js dibujen precios y tonos
   pintarBarra();
+
+  // Recupera la cuenta de la sesión que PHP conserva en el servidor.
+async function recuperarSesion() {
+  try {
+    const datos = await ApiSesion.consultar();
+
+    usuarioAutenticado = datos.autenticada
+      ? datos.usuario
+      : null;
+
+    // Actualiza la barra cuando llega la respuesta del servidor.
+    pintarBarra();
+  } catch (error) {
+    console.error("No se pudo consultar la sesión:", error);
+  }
+}
+
+recuperarSesion();
 
 })();

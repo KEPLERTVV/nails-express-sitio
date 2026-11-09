@@ -36,8 +36,8 @@ function pintarAgenda() {
     return;
   }
 
-  document.getElementById("agenda-contexto").textContent =
-    empleada.nombre + " · " + nombreSucursal(empleada.sucursal);
+  // El nombre y la sucursal se muestran desde la consulta a MySQL.
+    document.getElementById("agenda-contexto").textContent = "";
 
   // Sus citas de hoy (las canceladas liberan el bloque)
   const citasHoy = Sesion.citas().filter(c =>
@@ -304,3 +304,42 @@ function actualizarAgendaEmpleada() {
 }
 document.addEventListener("agenda:cambio", actualizarAgendaEmpleada);
 window.addEventListener("focus", actualizarAgendaEmpleada);
+
+// Permite descartar una respuesta si la cuenta cambia mientras esperamos.
+let consultaEmpleadaActual = 0;
+
+async function mostrarDatosEmpleadaBD() {
+  const numeroConsulta = ++consultaEmpleadaActual;
+  const contenedor = document.getElementById("empleada-datos-bd");
+  const cuenta = Sesion.actual();
+
+  contenedor.textContent = "";
+
+  // La sesión llega de PHP después de cargar la página.
+  if (!cuenta || cuenta.rol !== "empleada") return;
+
+  contenedor.textContent = "Consultando tus datos...";
+
+  try {
+    const datos = await ApiSesion.consultarEmpleada();
+
+    // Evita mostrar una respuesta anterior después de cerrar sesión.
+    if (numeroConsulta !== consultaEmpleadaActual) return;
+
+    const empleada = datos.empleada;
+
+    // textContent muestra los datos como texto, sin interpretarlos como HTML.
+    contenedor.textContent =
+      `${empleada.nombre} · ${empleada.sucursalNombre}`;
+  } catch (error) {
+    if (numeroConsulta !== consultaEmpleadaActual) return;
+
+    contenedor.textContent = error.message;
+  }
+}
+
+// Consulta cuando PHP confirma la sesión o cuando esta cambia.
+document.addEventListener("sesion:cambio", mostrarDatosEmpleadaBD);
+
+// También funciona si la sesión ya se recuperó.
+mostrarDatosEmpleadaBD();

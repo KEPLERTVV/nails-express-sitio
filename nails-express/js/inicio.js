@@ -24,8 +24,8 @@ function pintarFiltros() {
   const cont = document.getElementById("filtros");
   cont.innerHTML = FAMILIAS.map(f => `
     <button class="filtro" type="button"
-            data-familia="${f.id}"
-            aria-pressed="${f.id === familiaActiva}">${f.nombre}</button>
+            data-familia="${textoSeguro(f.id)}"
+            aria-pressed="${f.id === familiaActiva}">${textoSeguro(f.nombre)}</button>
   `).join("");
 
   cont.querySelectorAll(".filtro").forEach(boton => {
@@ -45,9 +45,10 @@ function pintarTonos() {
   document.getElementById("tonos").innerHTML = lista.map(c => `
     <button class="tono ${c.disponible ? "" : "tono--agotado"}"
             type="button" data-id="${c.id}" ${c.disponible ? "" : "disabled"}>
-      <div class="tono__muestra" style="background:${c.hex}"></div>
-      <div class="tono__nombre">${c.nombre}</div>
-      <div class="tono__marca">${c.marca}</div>
+    <div class="tono__muestra"
+    style="background:${/^#[0-9a-f]{6}$/i.test(c.hex) ? c.hex : "#CCCCCC"}"></div>
+    <div class="tono__nombre">${textoSeguro(c.nombre)}</div>
+    <div class="tono__marca">${textoSeguro(c.marca)}</div>
       ${c.disponible ? "" : '<div class="tono__etiqueta">Agotado por ahora</div>'}
     </button>
   `).join("");
@@ -62,7 +63,8 @@ const dialogo = document.getElementById("detalle");
 
 function abrirDetalle(idColor) {
   const color = COLORES.find(c => c.id === idColor);
-  if (!color) return;
+  // Un tono agotado no debe abrirse para seleccionarlo.
+  if (!color || !color.disponible) return;
 
   document.getElementById("detalle-muestra").style.background = color.hex;
   document.getElementById("detalle-nombre").textContent = color.nombre;
@@ -149,28 +151,43 @@ document.getElementById("cot-agendar").href =
 
 /* --- Sucursales ----------------------------------------------- */
 function pintarSucursales() {
-  document.getElementById("sucursales-lista").innerHTML = SUCURSALES.map(s => `
+  const contenedor = document.getElementById("sucursales-lista");
+
+  if (SUCURSALES.length === 0) {
+    contenedor.textContent = "No hay sucursales activas por el momento.";
+    return;
+  }
+
+  // Mostramos los textos recibidos sin interpretarlos como HTML.
+  contenedor.innerHTML = SUCURSALES.map(s => `
     <article class="sucursal">
-      <h3>${s.nombre}</h3>
-      <p class="sucursal__dato">${s.direccion}</p>
-      <p class="sucursal__dato">Todos los días de ${s.apertura} a ${s.cierre}</p>
-      <a class="boton boton--secundario" style="margin-top:1.2rem"
-         href="agendar.html?sucursal=${s.id}">Agendar aquí</a>
+      <h3>${textoSeguro(s.nombre)}</h3>
+      <p class="sucursal__dato">${textoSeguro(s.direccion)}</p>
+      <p class="sucursal__dato">
+        Horario: ${textoSeguro(s.apertura)} a ${textoSeguro(s.cierre)}
+      </p>
+      <a class="boton boton--secundario"
+         style="margin-top:1.2rem"
+         href="agendar.html?sucursal=${Number(s.id)}">
+        Agendar aquí
+      </a>
     </article>
   `).join("");
 }
 
 /* --- Arranque -------------------------------------------------- */
-pintarFiltros();
-pintarTonos();
-pintarSucursales();
+  document.getElementById("sucursales-lista").textContent =
+  "Cargando sucursales...";
+
+// Los tonos se mostrarán cuando termine la consulta a PHP.
+  document.getElementById("tonos").textContent = "Cargando tonos...";
 
 // Los servicios y el cotizador esperan la respuesta de PHP.
-async function cargarServiciosDesdeBD() {
+  async function cargarServiciosDesdeBD() {
   const contenedor = document.getElementById("servicios");
   const cotizador = document.querySelector(".cotizador");
 
-  contenedor.textContent = "Cargando servicios y diseños...";
+  contenedor.textContent = "Cargando catálogo...";
   cotizador.style.display = "none";
 
   try {
@@ -208,6 +225,68 @@ if (
   throw new Error("El catálogo debe incluir la opción Sin diseño.");
 }
 
+// Consulta los tonos, incluyendo los que están agotados.
+const respuestaColores = await fetch(
+  "../nails-express_backend/colores.php"
+);
+
+if (!respuestaColores.ok) {
+  throw new Error("No se pudieron consultar los colores.");
+}
+
+const coloresBD = await respuestaColores.json();
+
+if (!Array.isArray(coloresBD)) {
+  throw new Error("La respuesta de colores no tiene el formato esperado.");
+}
+
+// Consultamos las familias activas para construir los filtros.
+const respuestaFamilias = await fetch(
+  "../nails-express_backend/familias.php"
+);
+
+if (!respuestaFamilias.ok) {
+  throw new Error("No se pudieron consultar las familias.");
+}
+
+const familiasBD = await respuestaFamilias.json();
+
+if (!Array.isArray(familiasBD)) {
+  throw new Error("La respuesta de familias no tiene el formato esperado.");
+}
+
+// Consultamos las sucursales activas.
+const respuestaSucursales = await fetch(
+  "../nails-express_backend/sucursales.php"
+);
+
+if (!respuestaSucursales.ok) {
+  throw new Error("No se pudieron consultar las sucursales.");
+}
+
+const sucursalesBD = await respuestaSucursales.json();
+
+if (!Array.isArray(sucursalesBD)) {
+  throw new Error("La respuesta de sucursales no tiene el formato esperado.");
+}
+
+// Actualizamos el arreglo que utiliza la portada.
+SUCURSALES.splice(0, SUCURSALES.length, ...sucursalesBD);
+
+// "Todos los tonos" pertenece a puro js.
+FAMILIAS.splice(
+  0,
+  FAMILIAS.length,
+  { id: "todos", nombre: "Todos los tonos" },
+  ...familiasBD
+);
+
+// Empezamos mostrando todos los tonos.
+familiaActiva = "todos";
+
+// Conservamos el arreglo que ya utilizan los filtros y el detalle.
+COLORES.splice(0, COLORES.length, ...coloresBD);
+
 disenosPortada = disenosBD;
 
     // Sustituye el contenido del arreglo que ya utiliza la página.
@@ -218,13 +297,27 @@ disenosPortada = disenosBD;
     // Primero llegan los datos; después dibujamos y calculamos.
     pintarServicios();
     iniciarCotizador();
+    pintarFiltros();
+    pintarTonos();
+    pintarSucursales();
 
     cotizador.style.display = "";
 
   } catch (error) {
+    // Registra en la consola el error concreto.
     console.error(error);
+    // La carga es conjunta: si ocurre un error, mostramos estos avisos.
+    //tarjetas de servicios
     contenedor.textContent =
-      "No se pudieron cargar los servicios y diseños. Intenta recargar la página.";
+    "No se pudo cargar el catálogo. Intenta recargar la página.";
+
+    //Catálogo de tonos
+   document.getElementById("tonos").textContent =
+    "No se pudieron cargar los tonos.";
+
+    //Tarjetas de sucursales
+    document.getElementById("sucursales-lista").textContent =
+    "No se pudieron cargar las sucursales. Intenta recargar la página.";
   }
 }
 

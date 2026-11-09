@@ -1,2 +1,2 @@
-# Credenciales locales: usar la plantilla del backend para configurar otra máquina.
+# Credenciales locales: usar la plantilla del backend para configurar otra máquina (esto es opcional).
 /nails-express_backend/conexion.php

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prueba de inicio de sesión</title>
+</head>
+<!-- Envía al backend la petición de cerrar la sesión actual. -->
+<form action="logout.php" method="post">
+    <button type="submit">Cerrar sesión</button>
+</form>
+
+<body>
+  <h1>Probar acceso con MySQL</h1>
+
+  <!-- POST envía los datos en el cuerpo de la petición. -->
+  <form action="login.php" method="post">
+    <p>
+      <label for="usuario">Correo o teléfono</label><br>
+      <input
+        type="text"
+        id="usuario"
+        name="usuario"
+        autocomplete="username"
+        required
+      >
+    </p>
+
+    <p>
+      <label for="contrasena">Contraseña</label><br>
+      <input
+        type="password"
+        id="contrasena"
+        name="contrasena"
+        autocomplete="current-password"
+        required
+      >
+    </p>
+
+    <button type="submit">Iniciar sesión</button>
+  </form>
+</body>
+</html>
